@@ -1,0 +1,66 @@
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+
+import { EmployeeService } from './employee.service';
+import { CreateEmployeeDto, UpdateEmployeeDto } from './dto';
+
+import {
+  FindOneRelationsDto,
+  PaginationFilterStatusDto,
+} from '../../common/dto';
+import { EmployeeEntity } from './entities/employee.entity';
+import { Auth } from '../../auth/decorators';
+
+@ApiTags('Employee')
+@ApiBearerAuth()
+@Controller({ path: 'employee', version: '1' })
+export class EmployeeController {
+  constructor(private readonly employeeService: EmployeeService) {}
+
+  @Post()
+  create(@Body() payload: CreateEmployeeDto) {
+    return this.employeeService.createItem(payload);
+  }
+
+  @Get()
+  getItems(@Query() pagination: PaginationFilterStatusDto<EmployeeEntity>) {
+    return this.employeeService.getItems(pagination);
+  }
+
+  @Get(':id')
+  @Auth(['ADMIN'])
+  getItem(
+    @Param('id') id: string,
+    @Query() { relations }: FindOneRelationsDto,
+  ) {
+    return this.employeeService.getItem({ term: id, relations });
+  }
+
+  @Patch(':id')
+  updateItem(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() payload: UpdateEmployeeDto,
+  ) {
+    return this.employeeService.updateItem(id, payload);
+  }
+
+  @Delete(':id')
+  deleteItem(@Param('id', ParseIntPipe) id: number) {
+    return this.employeeService.deleteItem(id);
+  }
+
+  @Delete('restore/:id')
+  restoreItem(@Param('id', ParseIntPipe) id: number) {
+    return this.employeeService.restoreItem(id);
+  }
+}
