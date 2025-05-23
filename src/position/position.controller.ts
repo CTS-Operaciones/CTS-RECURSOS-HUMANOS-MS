@@ -13,7 +13,7 @@ import { ApiTags } from '@nestjs/swagger';
 
 import { PositionService } from './position.service';
 import { CreatePositionDto, UpdatePositionDto } from './dto';
-import { PaginationDto, FindOneRelationsDto } from '../../common/dto';
+import { PaginationDto, FindOneRelationsDto } from '../common';
 
 @ApiTags('Position')
 @Controller({ path: 'position', version: '1' })

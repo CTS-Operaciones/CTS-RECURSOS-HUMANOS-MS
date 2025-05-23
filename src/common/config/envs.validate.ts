@@ -8,18 +8,20 @@ interface EnvsVars {
   DB_USER: string;
   DB_PASSWORD: string;
   DB_PORT: number;
+  DEBBUGER_LOGS: boolean;
   PORT_APP: number;
   NATS_SERVERS: string[];
 }
 
 const envsSchema = joi
   .object({
-    DB_TYPE: joi.string().required(),
+    DB_TYPE: joi.string().optional().default('postgres'),
     DB_NAME: joi.string().required(),
     DB_SERVER: joi.string().required(),
     DB_USER: joi.string().required(),
     DB_PASSWORD: joi.string().required(),
     DB_PORT: joi.number().required().positive(),
+    DEBBUGER_LOGS: joi.boolean().optional().default(false),
     PORT_APP: joi.number().required().positive(),
     NATS_SERVERS: joi.array().items(joi.string()).required(),
   })
@@ -43,6 +45,7 @@ export const envs = {
   DB_USER: envsVars.DB_USER,
   DB_PASSWORD: envsVars.DB_PASSWORD,
   DB_PORT: envsVars.DB_PORT,
+  DEBBUGER_LOGS: envsVars.DEBBUGER_LOGS,
   PORT_APP: envsVars.PORT_APP,
   NATS_SERVERS: envsVars.NATS_SERVERS,
 };

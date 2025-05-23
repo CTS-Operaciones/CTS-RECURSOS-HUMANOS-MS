@@ -9,20 +9,15 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
 
 import { EmployeeService } from './employee.service';
 import { CreateEmployeeDto, UpdateEmployeeDto } from './dto';
 
-import {
-  FindOneRelationsDto,
-  PaginationFilterStatusDto,
-} from '../../common/dto';
+import { FindOneRelationsDto, PaginationFilterStatusDto } from '../common';
 import { EmployeeEntity } from './entities/employee.entity';
-import { Auth } from '../../auth/decorators';
 
 @ApiTags('Employee')
-@ApiBearerAuth()
 @Controller({ path: 'employee', version: '1' })
 export class EmployeeController {
   constructor(private readonly employeeService: EmployeeService) {}
@@ -38,7 +33,6 @@ export class EmployeeController {
   }
 
   @Get(':id')
-  @Auth(['ADMIN'])
   getItem(
     @Param('id') id: string,
     @Query() { relations }: FindOneRelationsDto,

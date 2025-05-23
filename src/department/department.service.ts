@@ -1,31 +1,134 @@
 import { Injectable } from '@nestjs/common';
-import { PaginationDto } from 'src/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { FindManyOptions, FindOneOptions, Repository } from 'typeorm';
+
+import {
+  createResult,
+  deleteResult,
+  ErrorManager,
+  findOneByTerm,
+  IPaginationsResult,
+  PaginationDto,
+  paginationResult,
+  restoreResult,
+  updateResult,
+} from '../common';
+import { CreateDepartmentDto, UpdateDepartmentDto } from './dto';
+
+import { DepartmentEntity } from './entities/department.entity';
 
 @Injectable()
 export class DepartmentService {
-  constructor() {}
+  constructor(
+    @InjectRepository(DepartmentEntity)
+    private readonly departmentRepository: Repository<DepartmentEntity>,
+  ) {}
 
-  create(createDepartmentDto: any) {
-    return 'This action adds a new department';
+  async create(
+    createDepartmentDto: CreateDepartmentDto,
+  ): Promise<DepartmentEntity> {
+    try {
+      const { name, abreviation } = createDepartmentDto;
+
+      const result = await createResult(
+        this.departmentRepository,
+        {
+          name,
+          abreviation,
+        },
+        DepartmentEntity,
+      );
+
+      return result;
+    } catch (error) {
+      throw ErrorManager.createSignatureError(error);
+    }
   }
 
-  findAll(pagination: PaginationDto) {
-    return `This action returns all department`;
+  async findAll(
+    pagination: PaginationDto,
+  ): Promise<IPaginationsResult<DepartmentEntity>> {
+    try {
+      const options: FindManyOptions<DepartmentEntity> = {};
+
+      if (pagination.relations) {
+        options.relations = {
+          position_id: true,
+        };
+      }
+
+      const result = await paginationResult(this.departmentRepository, {
+        ...pagination,
+        options,
+      });
+
+      return result;
+    } catch (error) {
+      throw ErrorManager.createSignatureError(error);
+    }
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} department`;
+  async findOne({
+    term,
+    relations = false,
+  }: {
+    term: string | number;
+    relations?: boolean;
+  }): Promise<DepartmentEntity> {
+    try {
+      const searchField: keyof DepartmentEntity = 'name';
+      const options: FindOneOptions<DepartmentEntity> = {};
+
+      if (relations) {
+        options.relations = {
+          position_id: true,
+        };
+      }
+
+      const result = await findOneByTerm({
+        repository: this.departmentRepository,
+        term,
+        searchField,
+        options,
+      });
+
+      return result;
+    } catch (error) {
+      throw ErrorManager.createSignatureError(error);
+    }
   }
 
-  update(id: number, updateDepartmentDto: any) {
-    return `This action updates a #${id} department`;
+  async update(id: number, updateDepartmentDto: UpdateDepartmentDto) {
+    try {
+      const deparment = await this.findOne({ term: id });
+
+      Object.assign(deparment, updateDepartmentDto);
+
+      const result = await updateResult(
+        this.departmentRepository,
+        id,
+        deparment,
+      );
+
+      return result;
+    } catch (error) {
+      throw ErrorManager.createSignatureError(error);
+    }
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} department`;
+  async remove(id: number) {
+    try {
+      return await deleteResult(this.departmentRepository, id);
+    } catch (error) {
+      throw ErrorManager.createSignatureError(error);
+    }
   }
 
-  restore(id: number) {
-    return `This action removes a #${id} department`;
+  async restore(id: number) {
+    try {
+      return await restoreResult(this.departmentRepository, id);
+    } catch (error) {
+      throw ErrorManager.createSignatureError(error);
+    }
   }
 }

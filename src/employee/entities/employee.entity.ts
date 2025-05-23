@@ -7,19 +7,18 @@ import {
   OneToOne,
 } from 'typeorm';
 
-import { IEmployee, IEmergencyContact } from '../../../common/interfaces';
-import { BaseEntity } from '../../../common/config';
-import { PositionEntity } from '../../position/entities/position.entity';
-import { StaffEntity } from '../../../operations/staff/entities/staff.entity';
-import { User } from '../../../auth/entities/user.entity';
-
 import {
+  IEmployee,
+  IEmergencyContact,
+  BaseEntity,
   BLOOD_TYPE,
   GENDER,
   NACIONALITY_EMPLOYEE,
   STATUS_CIVIL,
   STATUS_EMPLOYEE,
-} from '../../../common/constants';
+} from '../../common';
+import { PositionEntity } from '../../position/entities/position.entity';
+
 import { setYearOld } from '../utils/setYerarOld';
 
 @Entity({ name: 'employees' })
@@ -108,12 +107,6 @@ export class EmployeeEntity extends BaseEntity implements IEmployee {
   })
   @JoinColumn({ name: 'position_id' })
   position_id: PositionEntity;
-
-  @OneToMany(() => StaffEntity, (staff) => staff.employee_id)
-  staff_id: StaffEntity[];
-
-  @OneToOne(() => User, (user) => user.employee_id)
-  user_id: User;
 
   @BeforeInsert()
   setYearOld() {

@@ -1,9 +1,8 @@
 import { BeforeInsert, BeforeUpdate, Column, Entity, OneToMany } from 'typeorm';
 
-import { BaseEntity } from '../../../common/config';
 import { PositionEntity } from '../../position/entities/position.entity';
 
-import { IDepartment } from '../../../common/interfaces';
+import { BaseEntity, IDepartment } from '../../common';
 
 @Entity('departments')
 export class DepartmentEntity extends BaseEntity implements IDepartment {

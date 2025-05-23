@@ -11,3 +11,7 @@ export interface IPaginationResult<T> {
   totalPages: number;
   data: T[];
 }
+
+export interface IPaginateFilter<T> {
+  status?: T extends { status: infer U } ? U : never;
+}

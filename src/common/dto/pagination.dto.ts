@@ -1,6 +1,15 @@
-import { IsBoolean, IsNumber, IsOptional, IsPositive } from 'class-validator';
-import { IPagination } from '../interfaces';
+import {
+  IsBoolean,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsPositive,
+} from 'class-validator';
 import { Type } from 'class-transformer';
+
+import { IPaginateFilter, IPagination } from '../interfaces';
+import { STATUS, STATUS_EMPLOYEE } from '../constants';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class PaginationDto implements IPagination {
   @IsNumber()
@@ -19,4 +28,23 @@ export class PaginationDto implements IPagination {
   @IsOptional()
   @Type(() => Boolean)
   all?: boolean = false;
+
+  @ApiProperty({ type: Boolean, required: false })
+  @IsBoolean()
+  @IsOptional()
+  @Type(() => Boolean)
+  relations?: boolean;
+}
+
+export class PaginationFilterStatusDto<T>
+  extends PaginationDto
+  implements IPaginateFilter<T>
+{
+  @ApiProperty({
+    required: false,
+    enum: [...Object.values(STATUS), ...Object.values(STATUS_EMPLOYEE)],
+  })
+  @IsEnum([...Object.values(STATUS), ...Object.values(STATUS_EMPLOYEE)])
+  @IsOptional()
+  status?: T extends { status: infer U } ? U : never;
 }

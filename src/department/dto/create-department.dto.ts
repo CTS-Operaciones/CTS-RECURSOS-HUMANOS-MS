@@ -7,7 +7,7 @@ import {
   MinLength,
 } from 'class-validator';
 
-import { IDepartment } from '../../../common/interfaces';
+import { IDepartment } from '../../common';
 
 export class CreateDepartmentDto implements IDepartment {
   @ApiProperty({
