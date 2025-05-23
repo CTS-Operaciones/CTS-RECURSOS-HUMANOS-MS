@@ -1,58 +1,50 @@
 import {
   Controller,
-  Get,
-  Post,
   Body,
   Patch,
   Param,
   Delete,
   ParseIntPipe,
-  Query,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { MessagePattern, Payload } from '@nestjs/microservices';
 
 import { PositionService } from './position.service';
 import { CreatePositionDto, UpdatePositionDto } from './dto';
-import { PaginationDto, FindOneRelationsDto } from '../common';
+import { PaginationDto, FindOneWhitTermAndRelationDto } from '../common';
 
-@ApiTags('Position')
+@ApiTags('Positions')
 @Controller({ path: 'position', version: '1' })
 export class PositionController {
   constructor(private readonly positionsService: PositionService) {}
 
-  @Post()
-  create(@Body() createPositionDto: CreatePositionDto) {
+  @MessagePattern('create-position')
+  create(@Payload() createPositionDto: CreatePositionDto) {
     return this.positionsService.create(createPositionDto);
   }
 
-  @Get()
-  findAll(@Query() pagination: PaginationDto) {
+  @MessagePattern('find-all-positions')
+  findAll(@Payload() pagination: PaginationDto) {
     return this.positionsService.findAll(pagination);
   }
 
-  @Get(':term')
-  findOne(
-    @Param('term') id: string,
-    @Query() { relations }: FindOneRelationsDto,
-  ) {
-    return this.positionsService.findOne({ id, relations });
+  @MessagePattern('find-one-position')
+  findOne(@Payload() findOneRelationsDto: FindOneWhitTermAndRelationDto) {
+    return this.positionsService.findOne(findOneRelationsDto);
   }
 
-  @Patch(':id')
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() updatePositionDto: UpdatePositionDto,
-  ) {
-    return this.positionsService.update(id, updatePositionDto);
+  @MessagePattern('update-position')
+  update(@Payload() updatePositionDto: UpdatePositionDto) {
+    return this.positionsService.update(updatePositionDto);
   }
 
-  @Delete(':id')
-  remove(@Param('id', ParseIntPipe) id: number) {
+  @MessagePattern('remove-position')
+  remove(@Payload('id', ParseIntPipe) id: number) {
     return this.positionsService.remove(id);
   }
 
-  @Delete('restore/:id')
-  restore(@Param('id', ParseIntPipe) id: number) {
+  @MessagePattern('restore-position')
+  restore(@Payload('id', ParseIntPipe) id: number) {
     return this.positionsService.restore(id);
   }
 }

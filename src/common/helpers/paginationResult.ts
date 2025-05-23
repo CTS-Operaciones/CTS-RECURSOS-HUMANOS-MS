@@ -1,10 +1,16 @@
-import { Repository, FindManyOptions, ObjectLiteral } from 'typeorm';
-import { IPaginationDto, IPaginationsResult } from '../interfaces';
+import {
+  Repository,
+  FindManyOptions,
+  ObjectLiteral,
+  Not,
+  IsNull,
+} from 'typeorm';
+import { IPaginationDto, IPaginationResult } from '../interfaces';
 
 export async function paginationResult<T extends ObjectLiteral>(
   repository: Repository<T>,
   pagination: IPaginationDto<T>,
-): Promise<IPaginationsResult<T>> {
+): Promise<IPaginationResult<T>> {
   const { limit = 10, page = 1, all = false, options = {} } = pagination;
   const skip = page > 0 ? (page - 1) * limit : 0;
 

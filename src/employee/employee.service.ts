@@ -57,7 +57,7 @@ export class EmployeeService {
       } = payload;
 
       const position = await this.positionService.findOne({
-        id: position_id,
+        term: position_id,
       });
 
       const employee = await createResult(

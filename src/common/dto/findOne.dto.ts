@@ -15,3 +15,15 @@ export class FindOneRelationsDto implements Partial<Omit<IFindOne, 'term'>> {
   @IsOptional()
   relations?: boolean;
 }
+
+export class FindOneWhitTermAndRelationDto implements IFindOne {
+  @ApiProperty({ type: String || Number, required: true })
+  @IsString()
+  @IsNotEmpty()
+  term: string | number;
+
+  @ApiProperty({ type: Boolean, required: false })
+  @IsBoolean()
+  @IsOptional()
+  relations?: boolean;
+}

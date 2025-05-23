@@ -7,7 +7,9 @@ import {
   deleteResult,
   ErrorManager,
   findOneByTerm,
-  IPaginationsResult,
+  FindOneRelationsDto,
+  FindOneWhitTermAndRelationDto,
+  IPaginationResult,
   PaginationDto,
   paginationResult,
   restoreResult,
@@ -47,7 +49,7 @@ export class DepartmentService {
 
   async findAll(
     pagination: PaginationDto,
-  ): Promise<IPaginationsResult<DepartmentEntity>> {
+  ): Promise<IPaginationResult<DepartmentEntity>> {
     try {
       const options: FindManyOptions<DepartmentEntity> = {};
 
@@ -71,10 +73,7 @@ export class DepartmentService {
   async findOne({
     term,
     relations = false,
-  }: {
-    term: string | number;
-    relations?: boolean;
-  }): Promise<DepartmentEntity> {
+  }: FindOneWhitTermAndRelationDto): Promise<DepartmentEntity> {
     try {
       const searchField: keyof DepartmentEntity = 'name';
       const options: FindOneOptions<DepartmentEntity> = {};
@@ -98,11 +97,12 @@ export class DepartmentService {
     }
   }
 
-  async update(id: number, updateDepartmentDto: UpdateDepartmentDto) {
+  async update(updateDepartmentDto: UpdateDepartmentDto) {
     try {
+      const { id, ...rest } = updateDepartmentDto;
       const deparment = await this.findOne({ term: id });
 
-      Object.assign(deparment, updateDepartmentDto);
+      Object.assign(deparment, rest);
 
       const result = await updateResult(
         this.departmentRepository,

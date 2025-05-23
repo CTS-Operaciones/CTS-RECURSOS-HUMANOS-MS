@@ -17,7 +17,7 @@ import { CreateEmployeeDto, UpdateEmployeeDto } from './dto';
 import { FindOneRelationsDto, PaginationFilterStatusDto } from '../common';
 import { EmployeeEntity } from './entities/employee.entity';
 
-@ApiTags('Employee')
+@ApiTags('Employees')
 @Controller({ path: 'employee', version: '1' })
 export class EmployeeController {
   constructor(private readonly employeeService: EmployeeService) {}

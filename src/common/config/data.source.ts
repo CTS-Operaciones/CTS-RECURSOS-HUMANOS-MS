@@ -14,7 +14,7 @@ export const ConfigDataSource: PostgresConnectionOptions = {
   entities: [join(__dirname, '/../../**/*.entity.{ts,js}')],
   migrations: [join(__dirname, '/../../../migrations/*.{ts,js}')],
   synchronize: false,
-  logging: true,
+  logging: envs.DEBBUGER_LOGS,
 };
 
 export const AppDS = new DataSource(ConfigDataSource);

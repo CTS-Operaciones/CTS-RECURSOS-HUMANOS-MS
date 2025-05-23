@@ -1,4 +1,5 @@
 export * from './config/base.entity';
+export * from './config/cors.config';
 export * from './config/data.source';
 export * from './config/envs.validate';
 export * from './constants/enums';

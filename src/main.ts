@@ -1,8 +1,10 @@
 import { NestFactory } from '@nestjs/core';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import * as morgan from 'morgan';
 
-import { envs } from './common';
+import { CORS_CONFIG, envs } from './common';
 
 import { AppModule } from './app.module';
 
@@ -13,11 +15,17 @@ async function bootstrap() {
     AppModule,
     {
       transport: Transport.NATS,
-      options: {
-        servers: envs.NATS_SERVERS,
-      },
+      options: { servers: envs.NATS_SERVERS },
     },
   );
+
+  // const app = await NestFactory.create(AppModule);
+
+  // app.use(morgan('dev'));
+
+  // app.setGlobalPrefix('api');
+  // app.enableCors(CORS_CONFIG);
+  // app.enableVersioning();
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -29,6 +37,18 @@ async function bootstrap() {
       },
     }),
   );
+
+  // const config = new DocumentBuilder()
+  //   .setTitle('Recursos Humanos')
+  //   .setDescription('The Recursos Humanos API - CTS')
+  //   .setVersion('1.0')
+  //   .addTag('Departments')
+  //   .addTag('Positions')
+  //   .addTag('Employees')
+  //   .build();
+
+  // const documentFactory = () => SwaggerModule.createDocument(app, config);
+  // SwaggerModule.setup('api/docs', app, documentFactory);
 
   await app.listen();
   logger.log(`Recursos Humanos running on port ${envs.PORT_APP}`);

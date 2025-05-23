@@ -9,49 +9,49 @@ import {
   Query,
   ParseIntPipe,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 
 import { DepartmentService } from './department.service';
 
 import { CreateDepartmentDto, UpdateDepartmentDto } from './dto';
-import { FindOneRelationsDto, PaginationDto } from '../common';
+import {
+  FindOneRelationsDto,
+  FindOneWhitTermAndRelationDto,
+  PaginationDto,
+} from '../common';
+import { MessagePattern, Payload } from '@nestjs/microservices';
 
+@ApiTags('Departments')
 @Controller({ path: 'department', version: '1' })
 export class DepartmentController {
   constructor(private readonly departmentService: DepartmentService) {}
 
-  @Post()
+  @MessagePattern('create-department')
   create(@Body() createDepartmentDto: CreateDepartmentDto) {
     return this.departmentService.create(createDepartmentDto);
   }
 
-  @Get()
-  findAll(@Query() pagination: PaginationDto) {
+  @MessagePattern('find-all-department')
+  findAll(@Payload() pagination: PaginationDto) {
     return this.departmentService.findAll(pagination);
   }
 
-  @Get(':term')
-  findOne(
-    @Param('term') term: string,
-    @Query()
-    { relations }: FindOneRelationsDto,
-  ) {
-    return this.departmentService.findOne({ term, relations });
+  @MessagePattern('find-one-department')
+  findOne(@Payload() findOneRelationsDto: FindOneWhitTermAndRelationDto) {
+    return this.departmentService.findOne(findOneRelationsDto);
   }
 
-  @Patch(':id')
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() updateDepartmentDto: UpdateDepartmentDto,
-  ) {
-    return this.departmentService.update(id, updateDepartmentDto);
+  @MessagePattern('update-department')
+  update(@Payload() updateDepartmentDto: UpdateDepartmentDto) {
+    return this.departmentService.update(updateDepartmentDto);
   }
 
-  @Delete(':id')
+  @MessagePattern('remove-department')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.departmentService.remove(id);
   }
 
-  @Delete('restore/:id')
+  @MessagePattern('restore-department')
   restore(@Param('id', ParseIntPipe) id: number) {
     return this.departmentService.restore(id);
   }

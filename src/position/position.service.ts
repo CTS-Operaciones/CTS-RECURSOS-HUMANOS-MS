@@ -14,7 +14,8 @@ import {
   deleteResult,
   ErrorManager,
   findOneByTerm,
-  IPaginationsResult,
+  FindOneWhitTermAndRelationDto,
+  IPaginationResult,
   PaginationDto,
   paginationResult,
   restoreResult,
@@ -56,7 +57,7 @@ export class PositionService {
 
   async findAll(
     pagination: PaginationDto,
-  ): Promise<IPaginationsResult<PositionEntity>> {
+  ): Promise<IPaginationResult<PositionEntity>> {
     try {
       const options: FindManyOptions<PositionEntity> = {};
 
@@ -76,12 +77,9 @@ export class PositionService {
   }
 
   async findOne({
-    id,
+    term: id,
     relations = false,
-  }: {
-    id: string | number;
-    relations?: boolean;
-  }): Promise<PositionEntity> {
+  }: FindOneWhitTermAndRelationDto): Promise<PositionEntity> {
     try {
       const searchField: keyof PositionEntity = 'name';
       const options: FindOneOptions<PositionEntity> = {};
@@ -105,15 +103,15 @@ export class PositionService {
     }
   }
 
-  async update(
-    id: number,
-    updatePositionDto: UpdatePositionDto,
-  ): Promise<UpdateResult> {
+  async update({
+    id,
+    ...updatePositionDto
+  }: UpdatePositionDto): Promise<UpdateResult> {
     try {
       const { name, salary, salary_in_words, department_id } =
         updatePositionDto;
 
-      const position = await this.findOne({ id, relations: true });
+      const position = await this.findOne({ term: id, relations: true });
 
       let department = position.department_id;
 
