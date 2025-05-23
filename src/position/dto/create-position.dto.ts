@@ -8,7 +8,7 @@ import {
   Min,
 } from 'class-validator';
 
-import { ICreatePosition } from '../../../common/interfaces';
+import { ICreatePosition } from '../../common';
 
 export class CreatePositionDto implements ICreatePosition {
   @ApiProperty({ type: String, description: 'Name of the position' })

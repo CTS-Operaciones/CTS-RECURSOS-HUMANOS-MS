@@ -20,6 +20,7 @@ import {
   restoreResult,
   updateResult,
 } from 'src/common';
+import { DepartmentEntity } from 'src/department/entities/department.entity';
 
 @Injectable()
 export class PositionService {
@@ -112,11 +113,15 @@ export class PositionService {
       const { name, salary, salary_in_words, department_id } =
         updatePositionDto;
 
-      const position = await this.findOne({ id });
+      const position = await this.findOne({ id, relations: true });
 
-      const department = await this.departmentService.findOne({
-        term: department_id,
-      });
+      let department = position.department_id;
+
+      if (department_id && department.id !== department_id) {
+        department = await this.departmentService.findOne({
+          term: department_id,
+        });
+      }
 
       Object.assign(position, {
         name,

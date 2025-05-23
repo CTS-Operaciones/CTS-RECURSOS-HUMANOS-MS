@@ -2,6 +2,7 @@ export interface IPagination {
   page?: number;
   limit?: number;
   all?: boolean;
+  relations?: boolean;
 }
 
 export interface IPaginationResult<T> {

@@ -1,11 +1,11 @@
-import { ErrorManager, msgError } from '../../../common/utils';
+import { ErrorManager, msgError } from '../../common';
 
 export const setYearOld = (date: string) => {
   const date_birth = new Date(date);
 
   if (isNaN(date_birth.getTime())) {
     throw new ErrorManager({
-      type: 'NOT_ACCEPTABLE',
+      code: 'NOT_ACCEPTABLE',
       message: msgError('FORMAT_INCORRECT', date),
     });
   }

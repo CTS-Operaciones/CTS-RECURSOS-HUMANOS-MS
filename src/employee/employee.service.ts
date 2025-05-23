@@ -138,7 +138,6 @@ export class EmployeeService {
       const result = await findOneByTerm({
         repository: this.employeeRepository,
         term,
-        searchField: null,
         options,
       });
 

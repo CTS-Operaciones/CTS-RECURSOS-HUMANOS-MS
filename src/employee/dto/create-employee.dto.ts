@@ -15,15 +15,16 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
-import { IEmergencyContact, IEmployeeCreate } from '../../../common/interfaces';
-
 import {
   BLOOD_TYPE,
   GENDER,
   NACIONALITY_EMPLOYEE,
   STATUS_CIVIL,
   STATUS_EMPLOYEE,
-} from '../../../common/constants';
+  IEmergencyContact,
+  IEmployeeCreate,
+} from '../../common/';
+
 
 class EmergencyContactDto implements IEmergencyContact {
   @ApiProperty({

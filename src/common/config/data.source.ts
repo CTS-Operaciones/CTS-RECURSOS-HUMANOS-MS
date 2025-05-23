@@ -1,8 +1,8 @@
 import { join } from 'path';
 import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
+import { DataSource } from 'typeorm';
 
 import { envs } from './envs.validate';
-import { DataSource } from 'typeorm';
 
 export const ConfigDataSource: PostgresConnectionOptions = {
   type: 'postgres',

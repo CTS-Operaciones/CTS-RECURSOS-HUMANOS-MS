@@ -1,7 +1,7 @@
-import { Repository, FindManyOptions } from 'typeorm';
+import { Repository, FindManyOptions, ObjectLiteral } from 'typeorm';
 import { IPaginationDto, IPaginationsResult } from '../interfaces';
 
-export async function paginationResult<T>(
+export async function paginationResult<T extends ObjectLiteral>(
   repository: Repository<T>,
   pagination: IPaginationDto<T>,
 ): Promise<IPaginationsResult<T>> {

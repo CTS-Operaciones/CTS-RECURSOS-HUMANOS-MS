@@ -1,11 +1,4 @@
-import {
-  BeforeInsert,
-  Column,
-  Entity,
-  JoinColumn,
-  OneToMany,
-  OneToOne,
-} from 'typeorm';
+import { BeforeInsert, Column, Entity, JoinColumn, OneToOne } from 'typeorm';
 
 import {
   IEmployee,

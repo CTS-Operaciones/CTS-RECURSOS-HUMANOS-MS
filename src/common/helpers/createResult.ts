@@ -1,7 +1,7 @@
 import { ClassConstructor, plainToClass } from 'class-transformer';
-import { DeepPartial, Repository } from 'typeorm';
+import { DeepPartial, ObjectLiteral, Repository } from 'typeorm';
 
-export async function createResult<T>(
+export async function createResult<T extends ObjectLiteral>(
   repository: Repository<T>,
   data: DeepPartial<T>,
   classType: ClassConstructor<T>,

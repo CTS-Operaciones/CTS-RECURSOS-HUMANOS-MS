@@ -7,11 +7,9 @@ import {
   OneToOne,
 } from 'typeorm';
 
-import { BaseEntity } from '../../../common/config';
+import { BaseEntity, IPosition } from '../../common';
 import { DepartmentEntity } from '../../department/entities/department.entity';
 import { EmployeeEntity } from '../../employee/entities/employee.entity';
-
-import { IPosition } from '../../../common/interfaces';
 
 @Entity('positions')
 export class PositionEntity extends BaseEntity implements IPosition {

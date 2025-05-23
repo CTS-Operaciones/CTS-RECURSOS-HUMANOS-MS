@@ -1,9 +1,9 @@
-import { Repository, UpdateResult } from 'typeorm';
+import { ObjectLiteral, Repository, UpdateResult } from 'typeorm';
 import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 
 import { ErrorManager, msgError } from '../utils';
 
-export async function updateResult<T>(
+export async function updateResult<T extends ObjectLiteral>(
   repository: Repository<T>,
   id: number,
   data: Partial<T>,
@@ -16,7 +16,7 @@ export async function updateResult<T>(
   if (updateData.affected === 0) {
     throw new ErrorManager({
       message: msgError('UPDATE_NOT_FOUND', id),
-      type: 'NOT_MODIFIED',
+      code: 'NOT_MODIFIED',
     });
   }
 

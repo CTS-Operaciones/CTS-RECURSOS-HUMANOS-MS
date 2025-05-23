@@ -1,17 +1,23 @@
-import { Repository, Like, FindOptionsWhere, FindOneOptions } from 'typeorm';
+import {
+  Repository,
+  Like,
+  FindOptionsWhere,
+  FindOneOptions,
+  ObjectLiteral,
+} from 'typeorm';
 import { ErrorManager, msgError } from '../utils';
 
-export async function findOneByTerm<T>({
+export async function findOneByTerm<T extends ObjectLiteral>({
   repository,
   term,
-  searchField = null,
+  searchField = undefined,
   options = {},
 }: {
   repository: Repository<T>;
   term: string | number;
   searchField?: keyof T extends string ? keyof T : never;
   options?: FindOneOptions<T>;
-}): Promise<T | null> {
+}): Promise<T> {
   const { where = {}, relations = {}, select = {} } = options || {};
   const optionsFindOne: FindOneOptions<T> = {
     where,
@@ -24,7 +30,7 @@ export async function findOneByTerm<T>({
       ...optionsFindOne.where,
       id: term,
     } as unknown as FindOptionsWhere<T>;
-  } else if (typeof term === 'string' && searchField !== null) {
+  } else if (typeof term === 'string' && searchField !== undefined) {
     optionsFindOne.where = {
       ...optionsFindOne.where,
       [searchField]: Like(`%${term}%`),
@@ -32,7 +38,7 @@ export async function findOneByTerm<T>({
   } else {
     throw new ErrorManager({
       message: msgError('NOT_FOUND', term),
-      type: 'NOT_FOUND',
+      code: 'NOT_FOUND',
     });
   }
 
@@ -41,14 +47,14 @@ export async function findOneByTerm<T>({
   if (!result) {
     throw new ErrorManager({
       message: msgError('NO_WITH_TERM', term),
-      type: 'NOT_FOUND',
+      code: 'NOT_FOUND',
     });
   }
 
   return result;
 }
 
-export async function validateExistence<T>({
+export async function validateExistence<T extends ObjectLiteral>({
   repository,
   options,
   id = null,
@@ -63,12 +69,12 @@ export async function validateExistence<T>({
     if (id && result && id !== result['id']) {
       throw new ErrorManager({
         message: msgError('REGISTER_EXIST'),
-        type: 'AMBIGUOUS',
+        code: 'AMBIGUOUS',
       });
     } else if (result) {
       throw new ErrorManager({
         message: msgError('REGISTER_EXIST'),
-        type: 'NOT_FOUND',
+        code: 'NOT_FOUND',
       });
     }
 
