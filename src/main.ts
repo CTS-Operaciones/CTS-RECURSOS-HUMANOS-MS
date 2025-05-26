@@ -1,10 +1,8 @@
 import { NestFactory } from '@nestjs/core';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import * as morgan from 'morgan';
 
-import { CORS_CONFIG, envs } from './common';
+import { envs } from './common';
 
 import { AppModule } from './app.module';
 
@@ -51,6 +49,8 @@ async function bootstrap() {
   // SwaggerModule.setup('api/docs', app, documentFactory);
 
   await app.listen();
-  logger.log(`Recursos Humanos running on port ${envs.PORT_APP}`);
+  logger.log(
+    `Recursos Humanos - Microservice running on port ${envs.PORT_APP}`,
+  );
 }
 bootstrap();
