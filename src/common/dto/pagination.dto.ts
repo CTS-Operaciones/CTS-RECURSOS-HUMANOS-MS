@@ -28,7 +28,9 @@ export class PaginationDto implements IPagination {
   @IsOptional()
   @Type(() => Boolean)
   all?: boolean = false;
+}
 
+export class PaginationRelationsDto extends PaginationDto {
   @ApiProperty({ type: Boolean, required: false })
   @IsBoolean()
   @IsOptional()
@@ -37,7 +39,7 @@ export class PaginationDto implements IPagination {
 }
 
 export class PaginationFilterStatusDto<T>
-  extends PaginationDto
+  extends PaginationRelationsDto
   implements IPaginateFilter<T>
 {
   @ApiProperty({

@@ -95,11 +95,11 @@ export class EmployeeEntity extends BaseEntity implements IEmployee {
   status_civil?: STATUS_CIVIL;
 
   // Relations
-  @OneToOne(() => PositionEntity, (position) => position.employee_id, {
+  @OneToOne(() => PositionEntity, (position) => position.employee, {
     nullable: false,
   })
   @JoinColumn({ name: 'position_id' })
-  position_id: PositionEntity;
+  position: PositionEntity;
 
   @BeforeInsert()
   setYearOld() {

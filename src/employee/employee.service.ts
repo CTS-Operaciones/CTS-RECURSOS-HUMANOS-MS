@@ -82,7 +82,7 @@ export class EmployeeService {
           status,
           blood_type,
           status_civil,
-          position_id: position,
+          position: position,
         },
         EmployeeEntity,
       );
@@ -105,7 +105,7 @@ export class EmployeeService {
 
       if (pagination.relations) {
         options.relations = {
-          position_id: true,
+          position: true,
         };
       }
 
@@ -129,7 +129,7 @@ export class EmployeeService {
 
       if (relations) {
         options.relations = {
-          position_id: true,
+          position: true,
         };
       }
 

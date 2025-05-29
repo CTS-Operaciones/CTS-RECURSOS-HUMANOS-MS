@@ -10,35 +10,23 @@ import {
 import { BaseEntity, IPosition } from '../../common';
 import { DepartmentEntity } from '../../department/entities/department.entity';
 import { EmployeeEntity } from '../../employee/entities/employee.entity';
+import { SalaryEntity } from './salary.entity';
 
 @Entity('positions')
 export class PositionEntity extends BaseEntity implements IPosition {
   @Column({ type: 'varchar', length: 100, nullable: false })
   name: string;
 
-  @Column({ type: 'money', nullable: false })
-  salary: number;
-
-  @Column({ type: 'varchar', length: 100, nullable: true })
-  salary_in_words: string;
-
   // Relations
-  @ManyToOne(() => DepartmentEntity, (department) => department.position_id)
-  department_id: DepartmentEntity;
+  @ManyToOne(() => SalaryEntity, (salary) => salary.positions, {
+    cascade: true,
+  })
+  salary: SalaryEntity;
 
-  @OneToOne(() => EmployeeEntity, (employee) => employee.position_id)
-  employee_id: EmployeeEntity;
+  @ManyToOne(() => DepartmentEntity, (department) => department.positions)
+  department: DepartmentEntity;
 
-  //Transforms
-  @BeforeInsert()
-  nameToUpperCase() {
-    this.name = this.name.toUpperCase();
-    this.salary_in_words = this.salary_in_words.toUpperCase();
-  }
-
-  @BeforeUpdate()
-  nameToUpperCaseUpdate() {
-    this.name = this.name.toUpperCase();
-    this.salary_in_words = this.salary_in_words.toUpperCase();
-  }
+  //TODO: La relación sera con el staff del proyecto/sede
+  @OneToOne(() => EmployeeEntity, (employee) => employee.position)
+  employee: EmployeeEntity;
 }

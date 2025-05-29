@@ -6,8 +6,9 @@ import { PositionController } from './position.controller';
 import { PositionEntity } from './entities/position.entity';
 
 import { DepartmentModule } from '../department/department.module';
+import { SalaryEntity } from './entities/salary.entity';
 
-const entities = [PositionEntity];
+const entities = [PositionEntity, SalaryEntity];
 
 const servicesImport = [DepartmentModule];
 

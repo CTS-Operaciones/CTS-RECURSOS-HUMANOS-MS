@@ -15,9 +15,8 @@ import { DepartmentService } from './department.service';
 
 import { CreateDepartmentDto, UpdateDepartmentDto } from './dto';
 import {
-  FindOneRelationsDto,
   FindOneWhitTermAndRelationDto,
-  PaginationDto,
+  PaginationRelationsDto,
 } from '../common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 
@@ -32,7 +31,7 @@ export class DepartmentController {
   }
 
   @MessagePattern('find-all-department')
-  findAll(@Payload() pagination: PaginationDto) {
+  findAll(@Payload() pagination: PaginationRelationsDto) {
     return this.departmentService.findAll(pagination);
   }
 

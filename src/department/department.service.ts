@@ -7,10 +7,9 @@ import {
   deleteResult,
   ErrorManager,
   findOneByTerm,
-  FindOneRelationsDto,
   FindOneWhitTermAndRelationDto,
   IPaginationResult,
-  PaginationDto,
+  PaginationRelationsDto,
   paginationResult,
   restoreResult,
   updateResult,
@@ -48,14 +47,14 @@ export class DepartmentService {
   }
 
   async findAll(
-    pagination: PaginationDto,
+    pagination: PaginationRelationsDto,
   ): Promise<IPaginationResult<DepartmentEntity>> {
     try {
       const options: FindManyOptions<DepartmentEntity> = {};
 
       if (pagination.relations) {
         options.relations = {
-          position_id: true,
+          positions: true,
         };
       }
 
@@ -80,7 +79,7 @@ export class DepartmentService {
 
       if (relations) {
         options.relations = {
-          position_id: true,
+          positions: true,
         };
       }
 

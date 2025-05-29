@@ -16,5 +16,6 @@ export * from './interfaces/employee.interface';
 export * from './interfaces/find.interface';
 export * from './interfaces/pagination.interface';
 export * from './interfaces/position.interface';
+export * from './interfaces/salary.interface';
 export * from './utils/errorManager';
 export * from './utils/getMsgError';

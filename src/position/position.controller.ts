@@ -11,7 +11,10 @@ import { MessagePattern, Payload } from '@nestjs/microservices';
 
 import { PositionService } from './position.service';
 import { CreatePositionDto, UpdatePositionDto } from './dto';
-import { PaginationDto, FindOneWhitTermAndRelationDto } from '../common';
+import {
+  FindOneWhitTermAndRelationDto,
+  PaginationRelationsDto,
+} from '../common';
 
 @ApiTags('Positions')
 @Controller({ path: 'position', version: '1' })
@@ -24,7 +27,7 @@ export class PositionController {
   }
 
   @MessagePattern('find-all-positions')
-  findAll(@Payload() pagination: PaginationDto) {
+  findAll(@Payload() pagination: PaginationRelationsDto) {
     return this.positionsService.findAll(pagination);
   }
 

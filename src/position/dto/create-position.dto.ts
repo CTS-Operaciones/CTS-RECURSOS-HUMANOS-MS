@@ -1,4 +1,3 @@
-import { ApiProperty } from '@nestjs/swagger';
 import {
   IsNotEmpty,
   IsNumber,
@@ -6,37 +5,36 @@ import {
   IsString,
   MaxLength,
   Min,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 
-import { ICreatePosition } from '../../common';
+import { ICreatePosition, ISalary } from '../../common';
+
+export class CreateSalaryDto implements ISalary {
+  @IsNotEmpty()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsPositive()
+  @Min(0)
+  amount: number;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(100)
+  salary_in_words: string;
+}
 
 export class CreatePositionDto implements ICreatePosition {
-  @ApiProperty({ type: String, description: 'Name of the position' })
   @IsString()
   @IsNotEmpty()
   @MaxLength(100)
   name: string;
 
-  @ApiProperty({ type: Number, description: 'Salary of the position' })
+  @ValidateNested()
+  @Type(() => CreateSalaryDto)
   @IsNotEmpty()
-  @IsNumber({ maxDecimalPlaces: 2 })
-  @IsPositive()
-  @Min(0)
-  salary: number;
+  salary: CreateSalaryDto;
 
-  @ApiProperty({
-    type: String,
-    description: 'Salary in words of the position',
-  })
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(100)
-  salary_in_words: string;
-
-  @ApiProperty({
-    type: Number,
-    description: 'Department id of the position',
-  })
   @IsNumber()
   @IsPositive()
   @IsNotEmpty()

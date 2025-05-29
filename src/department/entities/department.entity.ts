@@ -12,8 +12,8 @@ export class DepartmentEntity extends BaseEntity implements IDepartment {
   @Column({ type: 'varchar', length: 10, nullable: true })
   abreviation?: string;
 
-  @OneToMany(() => PositionEntity, (position) => position.department_id)
-  position_id: PositionEntity[];
+  @OneToMany(() => PositionEntity, (position) => position.department)
+  positions: PositionEntity[];
 
   // Transforms
   @BeforeInsert()

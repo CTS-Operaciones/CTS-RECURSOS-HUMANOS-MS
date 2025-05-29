@@ -2,8 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PositionEntity } from './entities/position.entity';
 import {
+  DataSource,
   FindManyOptions,
   FindOneOptions,
+  IsNull,
+  QueryRunner,
   Repository,
   UpdateResult,
 } from 'typeorm';
@@ -16,11 +19,14 @@ import {
   findOneByTerm,
   FindOneWhitTermAndRelationDto,
   IPaginationResult,
-  PaginationDto,
+  ISalary,
+  PaginationRelationsDto,
   paginationResult,
   restoreResult,
+  runInTransaction,
   updateResult,
 } from 'src/common';
+import { SalaryEntity } from './entities/salary.entity';
 import { DepartmentEntity } from 'src/department/entities/department.entity';
 
 @Injectable()
@@ -28,42 +34,88 @@ export class PositionService {
   constructor(
     @InjectRepository(PositionEntity)
     private readonly positionRepository: Repository<PositionEntity>,
+    @InjectRepository(SalaryEntity)
+    private readonly salaryRepository: Repository<SalaryEntity>,
+    private readonly dataSource: DataSource,
     private readonly departmentService: DepartmentService,
   ) {}
 
-  async create(createPositionDto: CreatePositionDto): Promise<PositionEntity> {
+  async create(createPositionDto: CreatePositionDto) {
     try {
-      const { name, salary, salary_in_words, department_id } =
-        createPositionDto;
+      return runInTransaction(this.dataSource, async (queryRunner) => {
+        const { name, salary, department_id } = createPositionDto;
+        const { salary_in_words, amount } = salary;
 
-      const department = await this.departmentService.findOne({
-        term: department_id,
-      });
+        const department = await this.departmentService.findOne({
+          term: department_id,
+        });
 
-      return await createResult(
-        this.positionRepository,
-        {
-          name,
-          salary,
+        const salaryCrated = await this.findOrCreateSalary(queryRunner, {
+          amount,
           salary_in_words,
-          department_id: department,
-        },
-        PositionEntity,
-      );
+        });
+
+        const position = await createResult(
+          this.positionRepository,
+          {
+            name,
+            salary: salaryCrated,
+            department,
+          },
+          PositionEntity,
+          queryRunner,
+        );
+
+        return {
+          ...position,
+          salary: {
+            id: salaryCrated.id,
+            amount: salary.amount,
+            salary_in_words: salary.salary_in_words,
+          },
+        };
+      });
     } catch (error) {
       throw ErrorManager.createSignatureError(error);
     }
   }
 
+  async findOrCreateSalary(
+    queryRunner: QueryRunner,
+    { amount, salary_in_words }: ISalary,
+  ) {
+    try {
+      let salaryCrated = await queryRunner.manager.findOne(SalaryEntity, {
+        where: { amount, deleted_at: IsNull() },
+      });
+
+      if (!salaryCrated) {
+        salaryCrated = await createResult(
+          this.salaryRepository,
+          {
+            amount,
+            salary_in_words,
+          },
+          SalaryEntity,
+          queryRunner,
+        );
+      }
+
+      return salaryCrated;
+    } catch (error) {
+      throw ErrorManager.createSignatureError(error);
+    }
+  }
   async findAll(
-    pagination: PaginationDto,
+    pagination: PaginationRelationsDto,
   ): Promise<IPaginationResult<PositionEntity>> {
     try {
       const options: FindManyOptions<PositionEntity> = {};
 
       if (pagination.relations) {
         options.relations = {
-          department_id: true,
+          department: true,
+          salary: true,
         };
       }
 
@@ -86,7 +138,8 @@ export class PositionService {
 
       if (relations) {
         options.relations = {
-          department_id: true,
+          department: true,
+          salary: true,
         };
       }
 
@@ -108,29 +161,41 @@ export class PositionService {
     ...updatePositionDto
   }: UpdatePositionDto): Promise<UpdateResult> {
     try {
-      const { name, salary, salary_in_words, department_id } =
-        updatePositionDto;
+      return runInTransaction(this.dataSource, async (queryRunner) => {
+        const { name, salary, department_id } = updatePositionDto;
 
-      const position = await this.findOne({ term: id, relations: true });
+        const position = await this.findOne({ term: id, relations: true });
 
-      let department = position.department_id;
+        let department = position.department;
+        if (department_id && department.id !== department_id) {
+          department = await this.departmentService.findOne({
+            term: department_id,
+          });
+        }
 
-      if (department_id && department.id !== department_id) {
-        department = await this.departmentService.findOne({
-          term: department_id,
+        let salaryNew = position.salary;
+        if (salary?.amount !== salaryNew.amount) {
+          salaryNew = await this.findOrCreateSalary(queryRunner, {
+            amount: salary?.amount || 0,
+            salary_in_words: salary?.salary_in_words || '',
+          });
+        }
+
+        Object.assign(position, {
+          name,
+          salary: salaryNew,
+          department,
         });
-      }
 
-      Object.assign(position, {
-        name,
-        salary,
-        salary_in_words,
-        department_id: department,
+        const result = await updateResult(
+          this.positionRepository,
+          id,
+          position,
+          queryRunner,
+        );
+
+        return result;
       });
-
-      const result = await updateResult(this.positionRepository, id, position);
-
-      return result;
     } catch (error) {
       throw ErrorManager.createSignatureError(error);
     }

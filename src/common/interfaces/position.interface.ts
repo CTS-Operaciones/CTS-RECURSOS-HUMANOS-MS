@@ -1,7 +1,8 @@
+import { ISalary } from './salary.interface';
+
 export interface IPosition {
   name: string;
-  salary: number;
-  salary_in_words: string;
+  salary: ISalary;
 }
 
 export interface ICreatePosition extends IPosition {
