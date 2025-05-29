@@ -17,6 +17,7 @@ import {
   deleteResult,
   ErrorManager,
   findOneByTerm,
+  FindOneWhitTermAndRelationDto,
   IPaginationDto,
   PaginationFilterStatusDto,
   paginationResult,
@@ -122,10 +123,7 @@ export class EmployeeService {
   public async getItem({
     term,
     relations = false,
-  }: {
-    term: string | number;
-    relations?: boolean;
-  }): Promise<EmployeeEntity> {
+  }: FindOneWhitTermAndRelationDto): Promise<EmployeeEntity> {
     try {
       const options: FindOneOptions<EmployeeEntity> = {};
 
@@ -147,10 +145,10 @@ export class EmployeeService {
     }
   }
 
-  public async updateItem(
-    id: number,
-    payload: UpdateEmployeeDto,
-  ): Promise<UpdateResult> {
+  public async updateItem({
+    id,
+    ...payload
+  }: UpdateEmployeeDto): Promise<UpdateResult> {
     try {
       const employee = await this.getItem({ term: id });
 

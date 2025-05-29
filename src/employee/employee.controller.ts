@@ -14,47 +14,46 @@ import { ApiTags } from '@nestjs/swagger';
 import { EmployeeService } from './employee.service';
 import { CreateEmployeeDto, UpdateEmployeeDto } from './dto';
 
-import { FindOneRelationsDto, PaginationFilterStatusDto } from '../common';
+import {
+  FindOneRelationsDto,
+  FindOneWhitTermAndRelationDto,
+  PaginationFilterStatusDto,
+} from '../common';
 import { EmployeeEntity } from './entities/employee.entity';
+import { MessagePattern, Payload } from '@nestjs/microservices';
 
 @ApiTags('Employees')
 @Controller({ path: 'employee', version: '1' })
 export class EmployeeController {
   constructor(private readonly employeeService: EmployeeService) {}
 
-  @Post()
-  create(@Body() payload: CreateEmployeeDto) {
+  @MessagePattern('create-employee')
+  create(@Payload() payload: CreateEmployeeDto) {
     return this.employeeService.createItem(payload);
   }
 
-  @Get()
-  getItems(@Query() pagination: PaginationFilterStatusDto<EmployeeEntity>) {
+  @MessagePattern('findAll-employees')
+  getItems(@Payload() pagination: PaginationFilterStatusDto<EmployeeEntity>) {
     return this.employeeService.getItems(pagination);
   }
 
-  @Get(':id')
-  getItem(
-    @Param('id') id: string,
-    @Query() { relations }: FindOneRelationsDto,
-  ) {
-    return this.employeeService.getItem({ term: id, relations });
+  @MessagePattern('find-one-employee')
+  getItem(@Payload() { term, relations }: FindOneWhitTermAndRelationDto) {
+    return this.employeeService.getItem({ term, relations });
   }
 
-  @Patch(':id')
-  updateItem(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() payload: UpdateEmployeeDto,
-  ) {
-    return this.employeeService.updateItem(id, payload);
+  @MessagePattern('update-employee')
+  updateItem(@Payload() payload: UpdateEmployeeDto) {
+    return this.employeeService.updateItem(payload);
   }
 
-  @Delete(':id')
-  deleteItem(@Param('id', ParseIntPipe) id: number) {
+  @MessagePattern('remove-employee')
+  deleteItem(@Payload('id', ParseIntPipe) id: number) {
     return this.employeeService.deleteItem(id);
   }
 
-  @Delete('restore/:id')
-  restoreItem(@Param('id', ParseIntPipe) id: number) {
+  @MessagePattern('restore-employee')
+  restoreItem(@Payload('id', ParseIntPipe) id: number) {
     return this.employeeService.restoreItem(id);
   }
 }
