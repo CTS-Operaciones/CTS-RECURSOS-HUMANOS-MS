@@ -12,6 +12,7 @@ export * from './helpers/paginationResult';
 export * from './helpers/runTransaction';
 export * from './helpers/updateResult';
 export * from './interfaces/department.interface';
+export * from './interfaces/document.interface';
 export * from './interfaces/employee.interface';
 export * from './interfaces/find.interface';
 export * from './interfaces/pagination.interface';

@@ -5,6 +5,7 @@ import { ConfigDataSource } from './common';
 import { EmployeeModule } from './employee/employee.module';
 import { PositionModule } from './position/position.module';
 import { DepartmentModule } from './department/department.module';
+import { DocumentModule } from './document/document.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { DepartmentModule } from './department/department.module';
     EmployeeModule,
     PositionModule,
     DepartmentModule,
+    DocumentModule,
   ],
 })
 export class AppModule {}

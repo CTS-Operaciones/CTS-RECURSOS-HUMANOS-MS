@@ -11,6 +11,7 @@ import {
   STATUS_EMPLOYEE,
 } from '../../common';
 import { PositionEntity } from '../../position/entities/position.entity';
+import { DocumentEntity } from '../../document/entities/document.entity';
 
 import { setYearOld } from '../utils/setYerarOld';
 
@@ -100,6 +101,9 @@ export class EmployeeEntity extends BaseEntity implements IEmployee {
   })
   @JoinColumn({ name: 'position_id' })
   position: PositionEntity;
+
+  @OneToOne(() => DocumentEntity, (document) => document.employee)
+  document: DocumentEntity;
 
   @BeforeInsert()
   setYearOld() {
