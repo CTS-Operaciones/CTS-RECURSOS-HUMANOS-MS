@@ -1,6 +1,7 @@
 import { IsBoolean, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { IFindOne } from '../interfaces';
+import { Type } from 'class-transformer';
 
 export class FindOneDto implements Partial<Omit<IFindOne, 'relations'>> {
   @ApiProperty({ type: String || Number, required: true })
@@ -25,5 +26,6 @@ export class FindOneWhitTermAndRelationDto implements IFindOne {
   @ApiProperty({ type: Boolean, required: false })
   @IsBoolean()
   @IsOptional()
+  @Type(() => Boolean)
   relations?: boolean;
 }
