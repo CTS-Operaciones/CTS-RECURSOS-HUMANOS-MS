@@ -6,8 +6,6 @@ import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
 
 import {
-  FindOneDto,
-  FindOneRelationsDto,
   FindOneWhitTermAndRelationDto,
   PaginationRelationsDto,
 } from '../common';

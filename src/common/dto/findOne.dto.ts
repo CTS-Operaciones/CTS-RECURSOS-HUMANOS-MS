@@ -1,29 +1,32 @@
 import { IsBoolean, IsNotEmpty, IsOptional, IsString } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
-import { IFindOne } from '../interfaces';
 import { Type } from 'class-transformer';
 
-export class FindOneDto implements Partial<Omit<IFindOne, 'relations'>> {
-  @ApiProperty({ type: String || Number, required: true })
+import { IFindOne } from '../interfaces';
+import { OmitType } from '@nestjs/mapped-types';
+
+export class FindOneWhitTermAndRelationDto implements IFindOne {
   @IsString()
   @IsNotEmpty()
   term: string | number;
-}
 
-export class FindOneRelationsDto implements Partial<Omit<IFindOne, 'term'>> {
-  @ApiProperty({ type: Boolean, required: false })
   @IsBoolean()
   @IsOptional()
+  @Type(() => Boolean)
   relations?: boolean;
 }
 
-export class FindOneWhitTermAndRelationDto implements IFindOne {
-  @ApiProperty({ type: String || Number, required: true })
+export class FindOneDto extends OmitType(FindOneWhitTermAndRelationDto, [
+  'relations',
+] as const) {
   @IsString()
   @IsNotEmpty()
   term: string | number;
+}
 
-  @ApiProperty({ type: Boolean, required: false })
+export class FindOneRelationsDto extends OmitType(
+  FindOneWhitTermAndRelationDto,
+  ['term'] as const,
+) {
   @IsBoolean()
   @IsOptional()
   @Type(() => Boolean)

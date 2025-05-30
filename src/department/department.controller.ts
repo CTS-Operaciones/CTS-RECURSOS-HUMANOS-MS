@@ -1,15 +1,5 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-  Query,
-  ParseIntPipe,
-} from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { Controller, Body, Param, ParseIntPipe } from '@nestjs/common';
+import { MessagePattern, Payload } from '@nestjs/microservices';
 
 import { DepartmentService } from './department.service';
 
@@ -18,9 +8,7 @@ import {
   FindOneWhitTermAndRelationDto,
   PaginationRelationsDto,
 } from '../common';
-import { MessagePattern, Payload } from '@nestjs/microservices';
 
-@ApiTags('Departments')
 @Controller({ path: 'department', version: '1' })
 export class DepartmentController {
   constructor(private readonly departmentService: DepartmentService) {}

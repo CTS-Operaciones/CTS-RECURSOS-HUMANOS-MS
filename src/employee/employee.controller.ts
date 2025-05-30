@@ -1,28 +1,15 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  ParseIntPipe,
-  Patch,
-  Post,
-  Query,
-} from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { Controller, ParseIntPipe } from '@nestjs/common';
 
 import { EmployeeService } from './employee.service';
 import { CreateEmployeeDto, UpdateEmployeeDto } from './dto';
 
 import {
-  FindOneRelationsDto,
   FindOneWhitTermAndRelationDto,
   PaginationFilterStatusDto,
 } from '../common';
 import { EmployeeEntity } from './entities/employee.entity';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 
-@ApiTags('Employees')
 @Controller({ path: 'employee', version: '1' })
 export class EmployeeController {
   constructor(private readonly employeeService: EmployeeService) {}

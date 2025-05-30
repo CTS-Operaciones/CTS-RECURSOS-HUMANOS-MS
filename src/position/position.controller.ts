@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Body,
-  Patch,
-  Param,
-  Delete,
-  ParseIntPipe,
-} from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { Controller, ParseIntPipe } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 
 import { PositionService } from './position.service';
@@ -16,7 +8,6 @@ import {
   PaginationRelationsDto,
 } from '../common';
 
-@ApiTags('Positions')
 @Controller({ path: 'position', version: '1' })
 export class PositionController {
   constructor(private readonly positionsService: PositionService) {}

@@ -17,14 +17,6 @@ async function bootstrap() {
     },
   );
 
-  // const app = await NestFactory.create(AppModule);
-
-  // app.use(morgan('dev'));
-
-  // app.setGlobalPrefix('api');
-  // app.enableCors(CORS_CONFIG);
-  // app.enableVersioning();
-
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -35,18 +27,6 @@ async function bootstrap() {
       },
     }),
   );
-
-  // const config = new DocumentBuilder()
-  //   .setTitle('Recursos Humanos')
-  //   .setDescription('The Recursos Humanos API - CTS')
-  //   .setVersion('1.0')
-  //   .addTag('Departments')
-  //   .addTag('Positions')
-  //   .addTag('Employees')
-  //   .build();
-
-  // const documentFactory = () => SwaggerModule.createDocument(app, config);
-  // SwaggerModule.setup('api/docs', app, documentFactory);
 
   await app.listen();
   logger.log(

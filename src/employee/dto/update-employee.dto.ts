@@ -1,4 +1,4 @@
-import { PartialType } from '@nestjs/swagger';
+import { PartialType } from '@nestjs/mapped-types';
 import { CreateEmployeeDto } from './create-employee.dto';
 import { IsNotEmpty, IsNumber, IsPositive } from 'class-validator';
 
