@@ -35,12 +35,12 @@ export class EmployeeController {
   }
 
   @MessagePattern('remove-employee')
-  deleteItem(@Payload('id', ParseIntPipe) id: number) {
+  deleteItem(@Payload('id', ParseIntPipe) { id }: { id: number }) {
     return this.employeeService.deleteItem(id);
   }
 
   @MessagePattern('restore-employee')
-  restoreItem(@Payload('id', ParseIntPipe) id: number) {
+  restoreItem(@Payload('id', ParseIntPipe) { id }: { id: number }) {
     return this.employeeService.restoreItem(id);
   }
 }

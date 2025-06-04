@@ -33,12 +33,12 @@ export class PositionController {
   }
 
   @MessagePattern('remove-position')
-  remove(@Payload('id', ParseIntPipe) id: number) {
+  remove(@Payload('id', ParseIntPipe) { id }: { id: number }) {
     return this.positionsService.remove(id);
   }
 
   @MessagePattern('restore-position')
-  restore(@Payload('id', ParseIntPipe) id: number) {
+  restore(@Payload('id', ParseIntPipe) { id }: { id: number }) {
     return this.positionsService.restore(id);
   }
 }

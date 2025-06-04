@@ -34,12 +34,12 @@ export class DepartmentController {
   }
 
   @MessagePattern('remove-department')
-  remove(@Param('id', ParseIntPipe) id: number) {
+  remove(@Param('id', ParseIntPipe) { id }: { id: number }) {
     return this.departmentService.remove(id);
   }
 
   @MessagePattern('restore-department')
-  restore(@Param('id', ParseIntPipe) id: number) {
+  restore(@Param('id', ParseIntPipe) { id }: { id: number }) {
     return this.departmentService.restore(id);
   }
 }
