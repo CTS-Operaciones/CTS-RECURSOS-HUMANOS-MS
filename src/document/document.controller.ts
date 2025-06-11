@@ -15,8 +15,8 @@ export class DocumentController {
   constructor(private readonly documentService: DocumentService) {}
 
   @MessagePattern('createDocument')
-  create(@Payload() createDocumentDto: CreateDocumentDto) {
-    return this.documentService.create(createDocumentDto);
+  create(@Payload() { files }: { files: CreateDocumentDto[] }) {
+    return this.documentService.create(files);
   }
 
   @MessagePattern('findAllDocument')

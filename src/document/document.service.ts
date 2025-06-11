@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindManyOptions, FindOneOptions, Repository } from 'typeorm';
+import {
+  DataSource,
+  FindManyOptions,
+  FindOneOptions,
+  Repository,
+} from 'typeorm';
 
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
@@ -17,34 +22,46 @@ import {
   FindOneWhitTermAndRelationDto,
   PaginationRelationsDto,
   paginationResult,
+  runInTransaction,
   updateResult,
 } from '../common';
 
 @Injectable()
 export class DocumentService {
   constructor(
+    private readonly dataSource: DataSource,
     @InjectRepository(DocumentEntity)
     private readonly documentRepository: Repository<DocumentEntity>,
     private readonly employeeService: EmployeeService,
     private readonly typeDocumentService: TypeDocumentService,
   ) {}
-  async create(createDocumentDto: CreateDocumentDto) {
+  async create(createDocumentDto: CreateDocumentDto[]) {
     try {
-      const { type: _type, employee: _employee, ...rest } = createDocumentDto;
-
-      const employee = await this.employeeService.getItem({ term: _employee });
-
-      const type = await this.typeDocumentService.findOne({
-        term: _type,
+      const employee = await this.employeeService.getItem({
+        term: createDocumentDto[0].employee,
       });
 
-      const docuement = await createResult(
-        this.documentRepository,
-        { ...rest, type, employee },
-        DocumentEntity,
-      );
+      return await runInTransaction(this.dataSource, async (queryRunner) => {
+        const results: DocumentEntity[] = [];
+        for (const dto of createDocumentDto) {
+          const { type: _type, ...rest } = dto;
 
-      return docuement;
+          const type = await this.typeDocumentService.findOne({
+            term: _type,
+          });
+
+          const document = await createResult(
+            this.documentRepository,
+            { ...rest, type, employee },
+            DocumentEntity,
+            queryRunner,
+          );
+
+          results.push(document);
+        }
+
+        return results;
+      });
     } catch (error) {
       throw ErrorManager.createSignatureError(error);
     }

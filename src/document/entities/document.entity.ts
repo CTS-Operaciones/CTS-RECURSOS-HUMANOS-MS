@@ -19,7 +19,7 @@ export class DocumentEntity extends BaseEntity implements IDocument {
   @ManyToOne(() => TypeDocumentEntity, (type) => type.documents)
   type: TypeDocumentEntity;
 
-  @OneToOne(() => EmployeeEntity, (employee) => employee.document)
+  @ManyToOne(() => EmployeeEntity, (employee) => employee.document)
   @JoinColumn()
   employee: EmployeeEntity;
 }

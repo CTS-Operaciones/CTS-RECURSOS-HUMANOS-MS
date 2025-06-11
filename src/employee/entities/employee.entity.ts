@@ -1,4 +1,11 @@
-import { BeforeInsert, Column, Entity, JoinColumn, OneToOne } from 'typeorm';
+import {
+  BeforeInsert,
+  Column,
+  Entity,
+  JoinColumn,
+  OneToMany,
+  OneToOne,
+} from 'typeorm';
 
 import {
   IEmployee,
@@ -102,8 +109,8 @@ export class EmployeeEntity extends BaseEntity implements IEmployee {
   @JoinColumn({ name: 'position_id' })
   position: PositionEntity;
 
-  @OneToOne(() => DocumentEntity, (document) => document.employee)
-  document: DocumentEntity;
+  @OneToMany(() => DocumentEntity, (document) => document.employee)
+  document: DocumentEntity[];
 
   @BeforeInsert()
   setYearOld() {
