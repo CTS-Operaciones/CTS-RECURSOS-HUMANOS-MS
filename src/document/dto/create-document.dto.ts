@@ -6,7 +6,7 @@ import {
   IsString,
   IsUrl,
 } from 'class-validator';
-import { ICreateDocument } from '../../common';
+import { ICreateDocument, IFileSend } from '../../common';
 
 export class CreateDocumentDto implements ICreateDocument {
   @IsString()
@@ -31,4 +31,15 @@ export class CreateDocumentDto implements ICreateDocument {
   @IsNotEmpty()
   @IsPositive()
   employee: number;
+}
+
+export class FileSendDto implements IFileSend {
+  @IsNumber()
+  @IsNotEmpty()
+  @IsPositive()
+  type: number;
+
+  @IsString()
+  @IsNotEmpty()
+  file: string;
 }

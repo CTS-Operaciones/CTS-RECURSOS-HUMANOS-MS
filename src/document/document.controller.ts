@@ -6,9 +6,11 @@ import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
 
 import {
+  FindOneDto,
   FindOneWhitTermAndRelationDto,
   PaginationRelationsDto,
 } from '../common';
+import { FindDocumentsDto } from './dto';
 
 @Controller({ path: 'document', version: '1' })
 export class DocumentController {
@@ -20,22 +22,23 @@ export class DocumentController {
   }
 
   @MessagePattern('findAllDocument')
-  findAll(@Payload() pagination: PaginationRelationsDto) {
-    return this.documentService.findAll(pagination);
+  findAll(@Payload() pagination: FindDocumentsDto) {
+    return this.documentService.findAllForEmployee(pagination);
   }
 
   //TODO: Verificar el tipado por que da Inyternal server Error
   @MessagePattern('findOneDocument')
   findOne(
     @Payload()
-    { term, relations }: FindOneWhitTermAndRelationDto,
+    { term }: FindOneDto,
   ) {
-    return this.documentService.findOne({ term, relations });
+    return this.documentService.findOneDocument({ term });
   }
 
+  // TODO: Verificar el tipado.
   @MessagePattern('updateDocument')
-  update(@Payload() updateDocumentDto: UpdateDocumentDto) {
-    return this.documentService.update(updateDocumentDto);
+  update(@Payload() updateDocumentDto: any) {
+    return this.documentService.update(updateDocumentDto as UpdateDocumentDto);
   }
 
   @MessagePattern('removeDocument')

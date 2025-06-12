@@ -19,12 +19,16 @@ import {
   deleteResult,
   ErrorManager,
   findOneByTerm,
+  FindOneDto,
   FindOneWhitTermAndRelationDto,
+  IResponseUpdateDocument,
   PaginationRelationsDto,
   paginationResult,
   runInTransaction,
   updateResult,
+  validateExistence,
 } from '../common';
+import { FindDocumentsDto } from './dto';
 
 @Injectable()
 export class DocumentService {
@@ -41,10 +45,23 @@ export class DocumentService {
         term: createDocumentDto[0].employee,
       });
 
+      // TODO: #1 Validar que el empleado no tenga este tipo de documento registrado antes
       return await runInTransaction(this.dataSource, async (queryRunner) => {
         const results: DocumentEntity[] = [];
         for (const dto of createDocumentDto) {
           const { type: _type, ...rest } = dto;
+
+          //TODO: Validar que no exista el documento
+          if (
+            await this.validateDocumentExist({
+              employee: employee.id,
+              tipe_id: _type,
+            })
+          )
+            throw new ErrorManager({
+              code: 'CONFLICT',
+              message: 'El empleado ya tiene un documento de este tipo',
+            });
 
           const type = await this.typeDocumentService.findOne({
             term: _type,
@@ -67,15 +84,16 @@ export class DocumentService {
     }
   }
 
-  async findAll(pagination: PaginationRelationsDto) {
+  async findAllForEmployee(pagination: FindDocumentsDto) {
     try {
-      const { all, limit, page, relations } = pagination;
-      const options: FindManyOptions<DocumentEntity> = {};
+      const { employee_id, all, limit, page, relations } = pagination;
+      const options: FindManyOptions<DocumentEntity> = {
+        where: { employee: { id: employee_id } },
+      };
 
       if (relations) {
         options.relations = {
           type: true,
-          employee: true,
         };
       }
 
@@ -90,7 +108,44 @@ export class DocumentService {
     }
   }
 
-  async findOne({ term, relations }: FindOneWhitTermAndRelationDto) {
+  async validateDocumentExist({
+    employee,
+    tipe_id,
+  }: {
+    employee: number;
+    tipe_id: number;
+  }) {
+    try {
+      const options: FindOneOptions<DocumentEntity> = {
+        where: { employee: { id: employee }, type: { id: tipe_id } },
+      };
+
+      const documentExist = await validateExistence({
+        repository: this.documentRepository,
+        options,
+      });
+
+      return documentExist;
+    } catch (error) {
+      throw ErrorManager.createSignatureError(error);
+    }
+  }
+
+  async findOneDocument({ term }: FindOneDto) {
+    try {
+      const documento = await findOneByTerm({
+        repository: this.documentRepository,
+        term,
+        searchField: isNaN(Number(term)) ? 'name' : undefined,
+      });
+
+      return { url_file: documento.url_file };
+    } catch (error) {
+      throw ErrorManager.createSignatureError(error);
+    }
+  }
+
+  async findOne({ term, relations = false }: FindOneWhitTermAndRelationDto) {
     try {
       const options: FindOneOptions<DocumentEntity> = {};
 
@@ -101,11 +156,13 @@ export class DocumentService {
         };
       }
 
-      return await findOneByTerm({
+      const document = await findOneByTerm({
         repository: this.documentRepository,
         term,
         options,
       });
+
+      return document;
     } catch (error) {
       throw ErrorManager.createSignatureError(error);
     }
@@ -113,9 +170,10 @@ export class DocumentService {
 
   async update({ id, ...updateDocumentDto }: UpdateDocumentDto) {
     try {
-      const { type: _type, employee: _employee, ...rest } = updateDocumentDto;
+      const { type: _type, ...rest } = updateDocumentDto;
 
       const document = await this.findOne({ term: id, relations: true });
+      const old_file = document.url_file;
 
       if (_type && document.type.id !== _type) {
         const typeDocument = await this.typeDocumentService.findOne({
@@ -125,27 +183,21 @@ export class DocumentService {
         document.type = typeDocument;
       }
 
-      if (_employee && document.employee.id !== _employee) {
-        const employee = await this.employeeService.getItem({
-          term: _employee,
-        });
+      Object.assign(document, rest);
 
-        document.employee = employee;
-      }
+      const result = await updateResult(this.documentRepository, id, document);
 
-      Object.assign(document, updateDocumentDto);
-
-      return await updateResult(this.documentRepository, id, document);
+      return { result, old_file };
     } catch (error) {
       throw ErrorManager.createSignatureError(error);
     }
   }
 
-  async remove(id: number) {
+  async remove(id: number): Promise<IResponseUpdateDocument> {
     try {
       const document = await deleteResult(this.documentRepository, id);
-
-      return document;
+      // TODO: Retornar el patch del documento
+      return { result: document, old_file: '' };
     } catch (error) {
       throw ErrorManager.createSignatureError(error);
     }
