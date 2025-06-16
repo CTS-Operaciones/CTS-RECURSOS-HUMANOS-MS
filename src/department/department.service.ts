@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindManyOptions, FindOneOptions, Repository } from 'typeorm';
+import { DepartmentEntity } from 'cts-entities';
 
 import {
   createResult,
@@ -15,8 +16,6 @@ import {
   updateResult,
 } from '../common';
 import { CreateDepartmentDto, UpdateDepartmentDto } from './dto';
-
-import { DepartmentEntity } from './entities/department.entity';
 
 @Injectable()
 export class DepartmentService {

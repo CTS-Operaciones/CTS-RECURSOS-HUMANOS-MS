@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { PositionEntity } from './entities/position.entity';
+import { PositionEntity, SalaryEntity, DepartmentEntity } from 'cts-entities';
 import {
   DataSource,
   FindManyOptions,
@@ -10,7 +10,8 @@ import {
   Repository,
   UpdateResult,
 } from 'typeorm';
-import { DepartmentService } from 'src/department/department.service';
+
+import { DepartmentService } from '../department/department.service';
 import { CreatePositionDto, UpdatePositionDto } from './dto';
 import {
   createResult,
@@ -25,9 +26,7 @@ import {
   restoreResult,
   runInTransaction,
   updateResult,
-} from 'src/common';
-import { SalaryEntity } from './entities/salary.entity';
-import { DepartmentEntity } from 'src/department/entities/department.entity';
+} from '../common';
 
 @Injectable()
 export class PositionService {

@@ -6,10 +6,10 @@ import {
   Repository,
   UpdateResult,
 } from 'typeorm';
+import { EmployeeEntity } from 'cts-entities';
 
 import { CreateEmployeeDto, UpdateEmployeeDto } from './dto';
 
-import { EmployeeEntity } from './entities/employee.entity';
 import { PositionService } from '../position/position.service';
 
 import {
@@ -82,7 +82,7 @@ export class EmployeeService {
           status,
           blood_type,
           status_civil,
-          position: position,
+          //position: position,
         },
         EmployeeEntity,
       );
@@ -105,7 +105,7 @@ export class EmployeeService {
 
       if (pagination.relations) {
         options.relations = {
-          position: true,
+          //position: true,
         };
       }
 
@@ -129,7 +129,7 @@ export class EmployeeService {
 
       if (relations) {
         options.relations = {
-          position: true,
+          //position: true,
         };
       }
 

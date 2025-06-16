@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindManyOptions, Repository } from 'typeorm';
+import { TypeDocumentEntity } from 'cts-entities';
 
-import { TypeDocumentEntity } from './entities';
 import { CreateTypeDocumentDto, UpdateTypeDocumentDto } from './dto';
 import {
   createResult,

@@ -1,4 +1,6 @@
-import { Controller, ParseIntPipe } from '@nestjs/common';
+import { Controller } from '@nestjs/common';
+import { MessagePattern, Payload } from '@nestjs/microservices';
+import { EmployeeEntity } from 'cts-entities';
 
 import { EmployeeService } from './employee.service';
 import { CreateEmployeeDto, UpdateEmployeeDto } from './dto';
@@ -7,8 +9,6 @@ import {
   FindOneWhitTermAndRelationDto,
   PaginationFilterStatusDto,
 } from '../common';
-import { EmployeeEntity } from './entities/employee.entity';
-import { MessagePattern, Payload } from '@nestjs/microservices';
 
 @Controller({ path: 'employee', version: '1' })
 export class EmployeeController {

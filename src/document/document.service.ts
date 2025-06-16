@@ -6,10 +6,10 @@ import {
   FindOneOptions,
   Repository,
 } from 'typeorm';
+import { DocumentEntity } from 'cts-entities';
 
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
-import { DocumentEntity } from './entities';
 
 import { EmployeeService } from '../employee/employee.service';
 import { TypeDocumentService } from './typeDocument.service';
