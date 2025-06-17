@@ -5,11 +5,7 @@ import { DocumentService } from './document.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
 
-import {
-  FindOneDto,
-  FindOneWhitTermAndRelationDto,
-  PaginationRelationsDto,
-} from '../common';
+import { FindOneDto } from '../common';
 import { FindDocumentsDto } from './dto';
 
 @Controller({ path: 'document', version: '1' })

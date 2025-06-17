@@ -37,3 +37,11 @@ export interface IEmergencyContact {
 export interface IEmployeeCreate extends IEmployee {
   position_id: number;
 }
+
+export interface IEmployeeResponse extends IEmployee {
+  id: number;
+  position: {
+    id: number;
+    name: string;
+  }[];
+}

@@ -130,6 +130,7 @@ export class PositionService {
   async findOne({
     term: id,
     relations = false,
+    deletes = false,
   }: FindOneWhitTermAndRelationDto): Promise<PositionEntity> {
     try {
       const searchField: keyof PositionEntity = 'name';
@@ -140,6 +141,10 @@ export class PositionService {
           department: true,
           salary: true,
         };
+      }
+
+      if (deletes) {
+        options.withDeleted = true;
       }
 
       const result = await findOneByTerm({

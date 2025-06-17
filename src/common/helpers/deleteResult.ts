@@ -1,4 +1,4 @@
-import { ObjectLiteral, Repository, UpdateResult } from 'typeorm';
+import { ObjectLiteral, QueryRunner, Repository, UpdateResult } from 'typeorm';
 import { ErrorManager, msgError } from '../utils';
 
 export async function deleteResult<T extends ObjectLiteral>(
@@ -20,8 +20,13 @@ export async function deleteResult<T extends ObjectLiteral>(
 export async function restoreResult<T extends ObjectLiteral>(
   repository: Repository<T>,
   id: number,
+  queryRunner?: QueryRunner,
 ) {
-  const restoreRegister = await repository.restore(id);
+  const repo = queryRunner
+    ? queryRunner.manager.getRepository(repository.metadata.target)
+    : repository;
+
+  const restoreRegister = await repo.restore(id);
 
   if (restoreRegister.affected === 0) {
     throw new ErrorManager({

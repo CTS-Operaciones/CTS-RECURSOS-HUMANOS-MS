@@ -13,6 +13,11 @@ export class FindOneWhitTermAndRelationDto implements IFindOne {
   @IsOptional()
   @Type(() => Boolean)
   relations?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  @Type(() => Boolean)
+  deletes?: boolean;
 }
 
 export class FindOneDto extends OmitType(FindOneWhitTermAndRelationDto, [
@@ -31,4 +36,13 @@ export class FindOneRelationsDto extends OmitType(
   @IsOptional()
   @Type(() => Boolean)
   relations?: boolean;
+}
+
+export class FindOneDeleteDto extends OmitType(FindOneWhitTermAndRelationDto, [
+  'term',
+] as const) {
+  @IsBoolean()
+  @IsOptional()
+  @Type(() => Boolean)
+  deletes?: boolean;
 }
