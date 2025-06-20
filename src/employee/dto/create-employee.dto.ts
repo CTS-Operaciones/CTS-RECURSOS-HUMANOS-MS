@@ -1,5 +1,6 @@
 import {
   IsArray,
+  IsDate,
   IsEmail,
   IsEnum,
   IsNotEmpty,
@@ -20,8 +21,8 @@ import {
   NACIONALITY_EMPLOYEE,
   STATUS_CIVIL,
   STATUS_EMPLOYEE,
-  IEmergencyContact,
   IEmployeeCreate,
+  IEmergencyContact,
 } from '../../common/';
 
 class EmergencyContactDto implements IEmergencyContact {
@@ -40,6 +41,11 @@ class EmergencyContactDto implements IEmergencyContact {
 }
 
 export class CreateEmployeeDto implements IEmployeeCreate {
+  @IsNotEmpty()
+  @IsDate()
+  @Type(() => Date)
+  date_register: Date;
+
   @IsNotEmpty()
   @IsString()
   @MaxLength(100)
@@ -125,6 +131,17 @@ export class CreateEmployeeDto implements IEmployeeCreate {
   @IsEnum(STATUS_CIVIL)
   @IsOptional()
   status_civil?: STATUS_CIVIL;
+
+  @IsOptional()
+  @IsNumber()
+  @IsPositive()
+  @Min(1)
+  bank_id?: number;
+
+  @IsString()
+  @MaxLength(20)
+  @IsOptional()
+  number_account_bank?: string;
 
   // Relations
   @IsNotEmpty()

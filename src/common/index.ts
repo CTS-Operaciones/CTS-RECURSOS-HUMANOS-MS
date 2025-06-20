@@ -8,6 +8,7 @@ export * from './helpers/findOneResult';
 export * from './helpers/paginationResult';
 export * from './helpers/runTransaction';
 export * from './helpers/updateResult';
+export * from './interfaces/bank.interface';
 export * from './interfaces/department.interface';
 export * from './interfaces/document.interface';
 export * from './interfaces/employee.interface';

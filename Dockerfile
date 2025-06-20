@@ -8,8 +8,11 @@ COPY package.json pnpm-lock.yaml ./
 
 RUN pnpm install
 
+RUN pnpm add file:/shared/entities-ms
+
 COPY . .
 
-EXPOSE 3010
+EXPOSE 3020
 
+CMD ["sh", "-c", "pnpm add /shared/entities-ms"]
 # CMD ["pnpm", "start:dev"]

@@ -13,6 +13,7 @@ import { EmployeeEntity, EmployeeHasPositions } from 'cts-entities';
 import { CreateEmployeeDto, UpdateEmployeeDto } from './dto';
 
 import { PositionService } from '../position/position.service';
+import { BankService } from '../bank/bank.service';
 
 import {
   createResult,
@@ -36,12 +37,14 @@ export class EmployeeService {
     @InjectRepository(EmployeeHasPositions)
     private readonly employeeHasPostion: Repository<EmployeeHasPositions>,
     private readonly positionService: PositionService,
+    private readonly bankService: BankService,
     private readonly dataSource: DataSource,
   ) {}
 
   public async createItem(payload: CreateEmployeeDto): Promise<EmployeeEntity> {
     try {
       const {
+        date_register,
         names,
         first_last_name,
         second_last_name,
@@ -61,15 +64,20 @@ export class EmployeeService {
         blood_type,
         status_civil,
         position_id,
+        bank_id,
+        number_account_bank,
       } = payload;
       return await runInTransaction(this.dataSource, async (queryRunner) => {
         const position = await this.positionService.findOne({
           term: position_id,
         });
 
+        const bank = bank_id && (await this.bankService.findOne(bank_id));
+
         const employee = await createResult(
           this.employeeRepository,
           {
+            date_register,
             names,
             first_last_name,
             second_last_name,
@@ -88,6 +96,8 @@ export class EmployeeService {
             status,
             blood_type,
             status_civil,
+            number_account_bank: bank ? number_account_bank : undefined,
+            bank: bank ? bank : undefined,
           },
           EmployeeEntity,
           queryRunner,
@@ -152,6 +162,7 @@ export class EmployeeService {
 
       if (relations) {
         options.relations = {
+          bank: true,
           employeeHasPosition: {
             position_id: true,
           },
@@ -179,10 +190,16 @@ export class EmployeeService {
     ...payload
   }: UpdateEmployeeDto): Promise<UpdateResult> {
     const { position_id, ...payloadUpdate } = payload;
+    const { bank_id, ...data } = payloadUpdate;
     try {
       return await runInTransaction(this.dataSource, async (queryRunner) => {
-        const employee = await this.getItem({
+        const {
+          bank,
+          employeeHasPosition: _employeeHasPosition,
+          ...employee
+        } = await this.getItem({
           term: id,
+          relations: true,
         });
 
         if (position_id) {
@@ -194,7 +211,18 @@ export class EmployeeService {
           });
         }
 
-        Object.assign(employee, payloadUpdate);
+        if (bank_id) {
+          const newBank = await this.bankService.findOne(bank_id);
+
+          if (bank && bank.id !== bank_id) {
+            Object.assign(bank, newBank);
+          }
+        }
+
+        Object.assign(employee, {
+          ...data,
+          bank,
+        });
 
         const result = await updateResult(
           this.employeeRepository,
@@ -232,10 +260,7 @@ export class EmployeeService {
       );
 
       if (position) {
-        const restored = await restoreResult(
-          this.employeeHasPostion,
-          position.id,
-        );
+        await restoreResult(this.employeeHasPostion, position.id);
 
         this.deletePositionsOld(employeeHasPosition, position_id);
       } else {

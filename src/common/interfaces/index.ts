@@ -1,3 +1,4 @@
+export * from './bank.interface';
 export * from './department.interface';
 export * from './document.interface';
 export * from './employee.interface';
