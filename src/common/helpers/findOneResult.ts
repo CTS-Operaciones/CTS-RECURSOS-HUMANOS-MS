@@ -26,11 +26,16 @@ export async function findOneByTerm<T extends ObjectLiteral>({
     select,
   };
 
-  if (!isNaN(Number(term))) {
+  if (!isNaN(Number(term)) && searchField === undefined) {
     optionsFindOne.where = {
       ...optionsFindOne.where,
       id: term,
     } as unknown as FindOptionsWhere<T>;
+  } else if (!isNaN(Number(term)) && searchField !== undefined) {
+    optionsFindOne.where = {
+      ...optionsFindOne.where,
+      [searchField]: term,
+    };
   } else if (typeof term === 'string' && searchField !== undefined) {
     optionsFindOne.where = {
       ...optionsFindOne.where,

@@ -28,6 +28,7 @@ import {
   runInTransaction,
   updateResult,
 } from '../common';
+import { EmployeeHasPositionService } from './employeeHasPosition.service';
 
 @Injectable()
 export class EmployeeService {
@@ -37,6 +38,7 @@ export class EmployeeService {
     @InjectRepository(EmployeeHasPositions)
     private readonly employeeHasPostion: Repository<EmployeeHasPositions>,
     private readonly positionService: PositionService,
+    private readonly employeeHasPostionService: EmployeeHasPositionService,
     private readonly bankService: BankService,
     private readonly dataSource: DataSource,
   ) {}
@@ -103,15 +105,12 @@ export class EmployeeService {
           queryRunner,
         );
 
-        const { id, position_id: positionSave } = await createResult(
-          this.employeeHasPostion,
-          {
-            employee_id: employee,
-            position_id: position,
-          },
-          EmployeeHasPositions,
-          queryRunner,
-        );
+        const { id, position_id: positionSave } =
+          await this.employeeHasPostionService.create(
+            employee,
+            position,
+            queryRunner,
+          );
 
         return {
           ...employee,
@@ -203,11 +202,12 @@ export class EmployeeService {
         });
 
         if (position_id) {
-          await this.updatePosition({
+          await this.employeeHasPostionService.updatePosition({
             queryRunner,
             id,
             position_id,
             employee: employee as EmployeeEntity,
+            positionService: this.positionService,
           });
         }
 
@@ -237,64 +237,31 @@ export class EmployeeService {
     }
   }
 
-  private async updatePosition({
-    queryRunner,
-    id,
-    position_id,
-    employee,
-  }: {
-    queryRunner: QueryRunner;
-    id: number;
-    position_id: number;
-    employee: EmployeeEntity;
-  }) {
+  public async findPositionsById({
+    term,
+    deletes,
+    relations,
+  }: FindOneWhitTermAndRelationDto) {
     try {
-      const employeeHasPosition = await this.employeeHasPostion.find({
-        where: { employee_id: { id } },
-        withDeleted: true,
-        relations: { position_id: true },
+      const options: FindOneOptions<EmployeeHasPositions> = {};
+
+      if (relations) {
+        options.relations = {
+          employee_id: true,
+          position_id: true,
+        };
+      }
+
+      const employeeHasPostion = await findOneByTerm({
+        repository: this.employeeRepository,
+        term,
+        options: {},
       });
 
-      const position = employeeHasPosition.find(
-        (item) => item.position_id.id === position_id,
-      );
-
-      if (position) {
-        await restoreResult(this.employeeHasPostion, position.id);
-
-        this.deletePositionsOld(employeeHasPosition, position_id);
-      } else {
-        const newPosition = await this.positionService.findOne({
-          term: position_id,
-        });
-
-        await createResult(
-          this.employeeHasPostion,
-          {
-            employee_id: employee,
-            position_id: newPosition,
-          },
-          EmployeeHasPositions,
-          queryRunner,
-        );
-
-        this.deletePositionsOld(employeeHasPosition, position_id);
-      }
+      return employeeHasPostion;
     } catch (error) {
       throw ErrorManager.createSignatureError(error);
     }
-  }
-
-  private deletePositionsOld(
-    employeeHasPosition: EmployeeHasPositions[],
-    id: number,
-  ) {
-    employeeHasPosition.forEach(async (item) => {
-      if (item.deleted_at || item.position_id.id === id) {
-        return;
-      }
-      await deleteResult(this.employeeHasPostion, item.id);
-    });
   }
 
   public async deleteItem(id: number): Promise<UpdateResult> {

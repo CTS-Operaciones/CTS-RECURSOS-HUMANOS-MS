@@ -133,7 +133,7 @@ export class PositionService {
     deletes = false,
   }: FindOneWhitTermAndRelationDto): Promise<PositionEntity> {
     try {
-      const searchField: keyof PositionEntity = 'name';
+      let searchField: keyof PositionEntity = 'name';
       const options: FindOneOptions<PositionEntity> = {};
 
       if (relations) {
@@ -145,6 +145,11 @@ export class PositionService {
 
       if (deletes) {
         options.withDeleted = true;
+      }
+
+      if (!isNaN(+id)) {
+        options.where = { id: +id };
+        searchField = 'id';
       }
 
       const result = await findOneByTerm({

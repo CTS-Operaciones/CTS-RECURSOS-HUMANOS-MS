@@ -9,6 +9,7 @@ import {
   FindOneWhitTermAndRelationDto,
   PaginationFilterStatusDto,
 } from '../common';
+import { EmployeeHasPositionService } from './employeeHasPosition.service';
 
 @Controller({ path: 'employee', version: '1' })
 export class EmployeeController {
@@ -42,5 +43,38 @@ export class EmployeeController {
   @MessagePattern('restore-employee')
   restoreItem(@Payload() { id }: { id: number }) {
     return this.employeeService.restoreItem(id);
+  }
+}
+
+@Controller({ path: 'asignedPositions', version: '1' })
+export class AsignedPositionsController {
+  constructor(
+    private readonly employeeHasPostionService: EmployeeHasPositionService,
+  ) {}
+
+  // FIXME: #5 Validar Tipado del payload
+  @MessagePattern('asignedPositionsFindByEmployeeId')
+  findPositionsById(
+    @Payload()
+    {
+      term,
+      deletes,
+      relations,
+    }: {
+      term: number;
+      deletes?: boolean;
+      relations?: boolean;
+    },
+  ) {
+    return this.employeeHasPostionService.findOneByEmployeeId({
+      term,
+      deletes,
+      relations,
+    });
+  }
+
+  @MessagePattern('verifyEmployeeHasPosition')
+  verifyEmployeeHasPosition(@Payload() { id }: { id: number }) {
+    return this.employeeHasPostionService.verifyEmployeeHasPosition(id);
   }
 }
