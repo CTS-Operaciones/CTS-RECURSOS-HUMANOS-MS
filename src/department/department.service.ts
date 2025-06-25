@@ -68,7 +68,7 @@ export class DepartmentService {
     }
   }
 
-  async findOne({
+  async findOneByTerm({
     term,
     relations = false,
   }: FindOneWhitTermAndRelationDto): Promise<DepartmentEntity> {
@@ -95,10 +95,35 @@ export class DepartmentService {
     }
   }
 
+  async findOneById({
+    term,
+    relations = false,
+  }: FindOneWhitTermAndRelationDto): Promise<DepartmentEntity> {
+    try {
+      const options: FindOneOptions<DepartmentEntity> = {};
+
+      if (relations) {
+        options.relations = {
+          positions: true,
+        };
+      }
+
+      const result = await findOneByTerm({
+        repository: this.departmentRepository,
+        term,
+        options,
+      });
+
+      return result;
+    } catch (error) {
+      throw ErrorManager.createSignatureError(error);
+    }
+  }
+
   async update(updateDepartmentDto: UpdateDepartmentDto) {
     try {
       const { id, ...rest } = updateDepartmentDto;
-      const deparment = await this.findOne({ term: id });
+      const deparment = await this.findOneById({ term: id });
 
       Object.assign(deparment, rest);
 

@@ -25,7 +25,7 @@ export class DepartmentController {
 
   @MessagePattern('find-one-department')
   findOne(@Payload() findOneRelationsDto: FindOneWhitTermAndRelationDto) {
-    return this.departmentService.findOne(findOneRelationsDto);
+    return this.departmentService.findOneById(findOneRelationsDto);
   }
 
   @MessagePattern('update-department')
