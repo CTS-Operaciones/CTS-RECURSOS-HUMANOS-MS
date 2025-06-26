@@ -45,7 +45,7 @@ export class PositionService {
         const { name, salary, department_id } = createPositionDto;
         const { salary_in_words, amount } = salary;
 
-        const department = await this.departmentService.findOneById({
+        const department = await this.departmentService.findOneByTerm({
           term: department_id,
         });
 
@@ -177,7 +177,7 @@ export class PositionService {
 
         let department = position.department;
         if (department_id && department.id !== department_id) {
-          department = await this.departmentService.findOneById({
+          department = await this.departmentService.findOneByTerm({
             term: department_id,
           });
         }

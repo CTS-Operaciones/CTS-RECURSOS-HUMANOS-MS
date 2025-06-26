@@ -73,8 +73,12 @@ export class DepartmentService {
     relations = false,
   }: FindOneWhitTermAndRelationDto): Promise<DepartmentEntity> {
     try {
-      const searchField: keyof DepartmentEntity = 'name';
       const options: FindOneOptions<DepartmentEntity> = {};
+      let searchField: keyof DepartmentEntity | undefined = 'name';
+
+      if (!isNaN(+term)) {
+        searchField = undefined;
+      }
 
       if (relations) {
         options.relations = {
@@ -123,7 +127,7 @@ export class DepartmentService {
   async update(updateDepartmentDto: UpdateDepartmentDto) {
     try {
       const { id, ...rest } = updateDepartmentDto;
-      const deparment = await this.findOneById({ term: id });
+      const deparment = await this.findOneByTerm({ term: id });
 
       Object.assign(deparment, rest);
 
