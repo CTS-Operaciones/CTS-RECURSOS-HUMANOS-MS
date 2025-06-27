@@ -51,6 +51,7 @@ export class EmployeeService {
         first_last_name,
         second_last_name,
         date_birth,
+        year_old,
         email,
         telephone,
         address,
@@ -84,6 +85,7 @@ export class EmployeeService {
             first_last_name,
             second_last_name,
             date_birth,
+            year_old,
             email,
             telephone,
             address,
@@ -137,6 +139,7 @@ export class EmployeeService {
           employeeHasPosition: {
             position_id: true,
           },
+          bank: true,
         };
       }
 

@@ -66,7 +66,7 @@ export class CreateEmployeeDto implements IEmployeeCreate {
   @IsOptional()
   @IsNumber()
   @Min(18)
-  year_old?: number;
+  year_old: number;
 
   @IsNotEmpty()
   @IsEmail()

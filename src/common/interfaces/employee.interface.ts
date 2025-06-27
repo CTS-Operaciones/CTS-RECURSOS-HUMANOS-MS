@@ -13,7 +13,7 @@ export interface IEmployee {
   first_last_name: string;
   second_last_name?: string;
   date_birth: string;
-  year_old?: number;
+  year_old: number;
   email: string;
   telephone?: string;
   address?: string;
