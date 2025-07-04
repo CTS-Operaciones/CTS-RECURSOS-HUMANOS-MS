@@ -5,7 +5,7 @@ import {
   IsOptional,
   IsPositive,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 
 import { IPaginateFilter, IPagination } from '../interfaces';
 import { STATUS, STATUS_EMPLOYEE } from '../constants';
@@ -26,6 +26,7 @@ export class PaginationDto implements IPagination {
   @IsBoolean()
   @IsOptional()
   @Type(() => Boolean)
+  @Transform(({ obj }) => Boolean(obj?.all === 'true'))
   all?: boolean = false;
 }
 
@@ -33,6 +34,7 @@ export class PaginationRelationsDto extends PaginationDto {
   @IsBoolean()
   @IsOptional()
   @Type(() => Boolean)
+  @Transform(({ obj }) => Boolean(obj?.relations === 'true'))
   relations?: boolean;
 }
 

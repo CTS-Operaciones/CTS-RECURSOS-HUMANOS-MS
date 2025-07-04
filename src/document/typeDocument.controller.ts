@@ -21,8 +21,9 @@ export class TypeDocumentController {
   }
 
   @MessagePattern('findOneTypeDocument')
-  async findOne(@Payload() findOne: FindOneDto) {
-    return await this.typeDocumentService.findOne(findOne);
+  async findOne(@Payload() { term }: FindOneDto) {
+    console.log(term);
+    return await this.typeDocumentService.findOne({ term });
   }
 
   @MessagePattern('updateTypeDocument')

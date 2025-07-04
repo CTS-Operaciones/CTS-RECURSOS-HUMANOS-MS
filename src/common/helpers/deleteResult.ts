@@ -4,8 +4,13 @@ import { ErrorManager, msgError } from '../utils';
 export async function deleteResult<T extends ObjectLiteral>(
   repository: Repository<T>,
   id: number,
+  queryRunner?: QueryRunner,
 ): Promise<UpdateResult> {
-  const deleteRegister = await repository.softDelete(id);
+  const repo = queryRunner
+    ? queryRunner.manager.getRepository(repository.metadata.target)
+    : repository;
+
+  const deleteRegister = await repo.softDelete(id);
 
   if (deleteRegister.affected === 0) {
     throw new ErrorManager({

@@ -132,21 +132,27 @@ export class CreateEmployeeDto implements IEmployeeCreate {
   @IsOptional()
   status_civil?: STATUS_CIVIL;
 
-  @IsOptional()
-  @IsNumber()
-  @IsPositive()
-  @Min(1)
-  bank_id?: number;
-
   @IsString()
   @MaxLength(20)
   @IsOptional()
   number_account_bank?: string;
 
   // Relations
+  @IsOptional()
+  @IsNumber()
+  @IsPositive()
+  @Min(1)
+  bank_id?: number;
+
   @IsNotEmpty()
   @IsNumber()
   @IsPositive()
   @Min(1)
   position_id: number;
+
+  @IsNumber()
+  @IsPositive()
+  @IsNotEmpty()
+  @Min(1)
+  typeContract: number;
 }

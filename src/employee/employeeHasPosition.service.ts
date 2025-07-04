@@ -1,7 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { EmployeeEntity, EmployeeHasPositions } from 'cts-entities';
 import { DataSource, FindOneOptions, QueryRunner, Repository } from 'typeorm';
+import {
+  EmployeeEntity,
+  EmployeeHasPositions,
+  StaffEntity,
+  IEmployee,
+} from 'cts-entities';
 
 import {
   createResult,
@@ -9,13 +14,15 @@ import {
   ErrorManager,
   findOneByTerm,
   FindOneWhitTermAndRelationDto,
-  IEmployee,
   IPosition,
+  NATS_SERVICE,
   paginationResult,
   restoreResult,
+  sendAndHandleRpcExceptionPromise,
 } from '../common';
 
 import { PositionService } from '../position/position.service';
+import { ClientProxy } from '@nestjs/microservices';
 
 @Injectable()
 export class EmployeeHasPositionService {
@@ -23,6 +30,7 @@ export class EmployeeHasPositionService {
     private readonly dataSource: DataSource,
     @InjectRepository(EmployeeHasPositions)
     private readonly employeeHasPostion: Repository<EmployeeHasPositions>,
+    @Inject(NATS_SERVICE) private readonly clientProxy: ClientProxy,
   ) {}
 
   async create(
@@ -118,7 +126,7 @@ export class EmployeeHasPositionService {
     }
   }
 
-  // FIXME: #4 Obtener e historico de la tabla auditora
+  // FIXME: #4 Obtener el historico de la tabla auditora
   async findHistryByEmployeeId(id: number) {
     try {
       return await this.employeeHasPostion.find({
@@ -148,23 +156,30 @@ export class EmployeeHasPositionService {
       const employeeHasPosition = await this.employeeHasPostion.find({
         where: { employee_id: { id } },
         withDeleted: true,
-        relations: { position_id: true },
+        relations: {
+          position_id: true,
+          staff: { bondHasStaff: true, headquarter: true },
+        },
       });
 
       const position = employeeHasPosition.find(
         (item) => item.position_id.id === position_id,
       );
 
-      if (position) {
-        await restoreResult(this.employeeHasPostion, position.id);
+      let result: EmployeeHasPositions;
 
-        this.deletePositionsOld(employeeHasPosition, position_id);
+      if (position) {
+        await restoreResult(this.employeeHasPostion, position.id, queryRunner);
+
+        this.deletePositionsOld(employeeHasPosition, position_id, queryRunner);
+
+        result = position;
       } else {
         const newPosition = await positionService.findOne({
           term: position_id,
         });
 
-        await createResult(
+        result = await createResult(
           this.employeeHasPostion,
           {
             employee_id: employee,
@@ -174,8 +189,21 @@ export class EmployeeHasPositionService {
           queryRunner,
         );
 
-        this.deletePositionsOld(employeeHasPosition, position_id);
+        this.deletePositionsOld(employeeHasPosition, position_id, queryRunner);
       }
+
+      const staff: StaffEntity = await sendAndHandleRpcExceptionPromise(
+        this.clientProxy,
+        'updateStaff',
+        {
+          employeeHasPositions: 1,
+          headquarter: 1,
+          parent: 2,
+          queryRunner,
+        },
+      );
+
+      return result;
     } catch (error) {
       throw ErrorManager.createSignatureError(error);
     }
@@ -184,12 +212,13 @@ export class EmployeeHasPositionService {
   private deletePositionsOld(
     employeeHasPosition: EmployeeHasPositions[],
     id: number,
+    queryRunner?: QueryRunner,
   ) {
     employeeHasPosition.forEach(async (item) => {
       if (item.deleted_at || item.position_id.id === id) {
         return;
       }
-      await deleteResult(this.employeeHasPostion, item.id);
+      await deleteResult(this.employeeHasPostion, item.id, queryRunner);
     });
   }
 }

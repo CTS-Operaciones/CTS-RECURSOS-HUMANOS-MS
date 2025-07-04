@@ -22,7 +22,6 @@ export class DocumentController {
     return this.documentService.findAllForEmployee(pagination);
   }
 
-  //TODO: Verificar el tipado por que da Inyternal server Error
   @MessagePattern('findOneDocument')
   findOne(
     @Payload()
@@ -31,10 +30,9 @@ export class DocumentController {
     return this.documentService.findOneDocument({ term });
   }
 
-  // TODO: Verificar el tipado.
   @MessagePattern('updateDocument')
-  update(@Payload() updateDocumentDto: any) {
-    return this.documentService.update(updateDocumentDto as UpdateDocumentDto);
+  update(@Payload() updateDocumentDto: UpdateDocumentDto) {
+    return this.documentService.update(updateDocumentDto);
   }
 
   @MessagePattern('removeDocument')

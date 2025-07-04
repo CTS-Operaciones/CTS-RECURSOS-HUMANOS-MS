@@ -29,17 +29,17 @@ import {
   updateResult,
 } from '../common';
 import { EmployeeHasPositionService } from './employeeHasPosition.service';
+import { ContractService } from 'src/contract/contract.service';
 
 @Injectable()
 export class EmployeeService {
   constructor(
     @InjectRepository(EmployeeEntity)
     private readonly employeeRepository: Repository<EmployeeEntity>,
-    @InjectRepository(EmployeeHasPositions)
-    private readonly employeeHasPostion: Repository<EmployeeHasPositions>,
     private readonly positionService: PositionService,
     private readonly employeeHasPostionService: EmployeeHasPositionService,
     private readonly bankService: BankService,
+    private readonly typeContractService: ContractService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -69,6 +69,7 @@ export class EmployeeService {
         position_id,
         bank_id,
         number_account_bank,
+        typeContract,
       } = payload;
       return await runInTransaction(this.dataSource, async (queryRunner) => {
         const position = await this.positionService.findOne({
@@ -76,6 +77,10 @@ export class EmployeeService {
         });
 
         const bank = bank_id && (await this.bankService.findOne(bank_id));
+
+        const _typeContract = await this.typeContractService.findOne({
+          term: typeContract,
+        });
 
         const employee = await createResult(
           this.employeeRepository,
@@ -102,6 +107,7 @@ export class EmployeeService {
             status_civil,
             number_account_bank: bank ? number_account_bank : undefined,
             bank: bank ? bank : undefined,
+            typeContract: _typeContract,
           },
           EmployeeEntity,
           queryRunner,
@@ -158,15 +164,26 @@ export class EmployeeService {
     term,
     relations = false,
     deletes = false,
+    allRelations = false,
   }: FindOneWhitTermAndRelationDto): Promise<EmployeeEntity> {
     try {
       const options: FindOneOptions<EmployeeEntity> = {};
 
-      if (relations) {
+      if (relations || allRelations) {
         options.relations = {
           bank: true,
           employeeHasPosition: {
             position_id: true,
+          },
+          typeContract: true,
+        };
+      }
+
+      if (allRelations) {
+        options.relations = {
+          ...options.relations,
+          employeeHasPosition: {
+            staff: { bondHasStaff: true, headquarter: true },
           },
         };
       }
@@ -187,19 +204,11 @@ export class EmployeeService {
     }
   }
 
-  public async updateItem({
-    id,
-    ...payload
-  }: UpdateEmployeeDto): Promise<UpdateResult> {
-    const { position_id, ...payloadUpdate } = payload;
-    const { bank_id, ...data } = payloadUpdate;
+  public async updateItem({ id, ...payload }: UpdateEmployeeDto) {
+    const { position_id, bank_id, typeContract, ...data } = payload;
     try {
       return await runInTransaction(this.dataSource, async (queryRunner) => {
-        const {
-          bank,
-          employeeHasPosition: _employeeHasPosition,
-          ...employee
-        } = await this.getItem({
+        const { bank, ...employee } = await this.getItem({
           term: id,
           relations: true,
         });
@@ -219,6 +228,16 @@ export class EmployeeService {
 
           if (bank && bank.id !== bank_id) {
             Object.assign(bank, newBank);
+          }
+        }
+
+        if (typeContract) {
+          const newTypeContract = await this.typeContractService.findOne({
+            term: typeContract,
+          });
+
+          if (typeContract && employee.typeContract.id !== typeContract) {
+            Object.assign(employee.typeContract, newTypeContract);
           }
         }
 

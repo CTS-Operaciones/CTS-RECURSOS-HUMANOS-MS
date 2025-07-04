@@ -70,7 +70,9 @@ export class TypeDocumentService {
         term: id,
       });
 
-      Object.assign(typeDocument, { type });
+      if (type && typeDocument.type !== type) {
+        typeDocument.type = type;
+      }
 
       return await updateResult(this.typeDocumentRepository, id, typeDocument);
     } catch (error) {

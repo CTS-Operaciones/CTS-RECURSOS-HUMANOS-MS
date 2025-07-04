@@ -6,6 +6,7 @@ import { EmployeeService } from './employee.service';
 import { CreateEmployeeDto, UpdateEmployeeDto } from './dto';
 
 import {
+  FindOneDeleteRelationsDto,
   FindOneWhitTermAndRelationDto,
   PaginationFilterStatusDto,
 } from '../common';
@@ -61,7 +62,7 @@ export class AsignedPositionsController {
       deletes,
       relations,
     }: {
-      term: number;
+      term: string | number;
       deletes?: boolean;
       relations?: boolean;
     },

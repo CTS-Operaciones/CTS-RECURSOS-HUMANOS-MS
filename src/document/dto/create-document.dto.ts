@@ -10,7 +10,7 @@ import { ICreateDocument, IFileSend } from '../../common';
 
 export class CreateDocumentDto implements ICreateDocument {
   @IsString()
-  @IsUrl()
+  //@IsUrl()
   @IsNotEmpty()
   url_file: string;
 

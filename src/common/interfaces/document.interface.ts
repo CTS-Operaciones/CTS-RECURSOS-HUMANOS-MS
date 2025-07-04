@@ -1,5 +1,5 @@
 import { UpdateResult } from 'typeorm';
-import { IEmployee } from './employee.interface';
+import { IEmployee } from 'cts-entities';
 
 export interface IDocument {
   url_file: string;
