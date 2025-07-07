@@ -208,20 +208,20 @@ export class EmployeeService {
     const { position_id, bank_id, typeContract, ...data } = payload;
     try {
       return await runInTransaction(this.dataSource, async (queryRunner) => {
-        const { bank, ...employee } = await this.getItem({
+        const { bank, employeeHasPosition, ...employee } = await this.getItem({
           term: id,
           relations: true,
         });
 
-        if (position_id) {
-          await this.employeeHasPostionService.updatePosition({
-            queryRunner,
-            id,
-            position_id,
-            employee: employee as EmployeeEntity,
-            positionService: this.positionService,
-          });
-        }
+        // if (position_id) {
+        //   await this.employeeHasPostionService.updatePosition({
+        //     queryRunner,
+        //     id,
+        //     position_id,
+        //     employee: employee as EmployeeEntity,
+        //     positionService: this.positionService,
+        //   });
+        // }
 
         if (bank_id) {
           const newBank = await this.bankService.findOne(bank_id);
@@ -239,6 +239,18 @@ export class EmployeeService {
           if (typeContract && employee.typeContract.id !== typeContract) {
             Object.assign(employee.typeContract, newTypeContract);
           }
+        }
+
+        if (position_id) {
+          const position = await this.positionService.findOne({
+            term: position_id,
+          });
+
+          await this.employeeHasPostionService.create(
+            employee,
+            position,
+            queryRunner,
+          );
         }
 
         Object.assign(employee, {

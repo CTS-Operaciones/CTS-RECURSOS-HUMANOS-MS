@@ -171,7 +171,7 @@ export class EmployeeHasPositionService {
       if (position) {
         await restoreResult(this.employeeHasPostion, position.id, queryRunner);
 
-        this.deletePositionsOld(employeeHasPosition, position_id, queryRunner);
+        //this.deletePositionsOld(employeeHasPosition, position_id, queryRunner);
 
         result = position;
       } else {
@@ -189,19 +189,20 @@ export class EmployeeHasPositionService {
           queryRunner,
         );
 
-        this.deletePositionsOld(employeeHasPosition, position_id, queryRunner);
+        //this.deletePositionsOld(employeeHasPosition, position_id, queryRunner);
       }
 
-      const staff: StaffEntity = await sendAndHandleRpcExceptionPromise(
-        this.clientProxy,
-        'updateStaff',
-        {
-          employeeHasPositions: 1,
-          headquarter: 1,
-          parent: 2,
-          queryRunner,
-        },
-      );
+      // Actualizar datos de staff ¿?
+      // const staff: StaffEntity = await sendAndHandleRpcExceptionPromise(
+      //   this.clientProxy,
+      //   'updateStaff',
+      //   {
+      //     employeeHasPositions: 1,
+      //     headquarter: 1,
+      //     parent: 2,
+      //     queryRunner,
+      //   },
+      // );
 
       return result;
     } catch (error) {

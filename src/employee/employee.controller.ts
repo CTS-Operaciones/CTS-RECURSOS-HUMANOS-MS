@@ -6,7 +6,6 @@ import { EmployeeService } from './employee.service';
 import { CreateEmployeeDto, UpdateEmployeeDto } from './dto';
 
 import {
-  FindOneDeleteRelationsDto,
   FindOneWhitTermAndRelationDto,
   PaginationFilterStatusDto,
 } from '../common';
@@ -57,20 +56,13 @@ export class AsignedPositionsController {
   @MessagePattern('asignedPositionsFindByEmployeeId')
   findPositionsById(
     @Payload()
-    {
-      term,
-      deletes,
-      relations,
-    }: {
-      term: string | number;
-      deletes?: boolean;
-      relations?: boolean;
-    },
+    { term, deletes, relations, allRelations }: FindOneWhitTermAndRelationDto,
   ) {
     return this.employeeHasPostionService.findOneByEmployeeId({
       term,
       deletes,
       relations,
+      allRelations,
     });
   }
 
