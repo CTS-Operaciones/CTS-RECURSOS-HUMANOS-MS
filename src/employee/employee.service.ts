@@ -72,8 +72,8 @@ export class EmployeeService {
         typeContract,
       } = payload;
       return await runInTransaction(this.dataSource, async (queryRunner) => {
-        const position = await this.positionService.findOne({
-          term: position_id,
+        const position = await this.positionService.findManyByIds({
+          ids: position_id,
         });
 
         const bank = bank_id && (await this.bankService.findOne(bank_id));
@@ -113,16 +113,15 @@ export class EmployeeService {
           queryRunner,
         );
 
-        const { id, position_id: positionSave } =
-          await this.employeeHasPostionService.create(
-            employee,
-            position,
-            queryRunner,
-          );
+        const employeeHasPosition = await this.employeeHasPostionService.create(
+          employee,
+          position,
+          queryRunner,
+        );
 
         return {
           ...employee,
-          position: { id, name: positionSave.name },
+          position: employeeHasPosition.map((item) => item.id),
         };
       });
     } catch (error) {
@@ -134,13 +133,14 @@ export class EmployeeService {
     pagination: PaginationFilterStatusDto<EmployeeEntity>,
   ): Promise<IPaginationDto<EmployeeEntity>> {
     try {
+      const { relations, all, status, ..._pagination } = pagination;
       const options: FindManyOptions<EmployeeEntity> = {};
 
-      if (pagination.status) {
+      if (status) {
         options.where = { ...options.where, status: pagination.status };
       }
 
-      if (pagination.relations) {
+      if (relations) {
         options.relations = {
           employeeHasPosition: {
             position_id: true,
@@ -149,8 +149,17 @@ export class EmployeeService {
         };
       }
 
+      if (all) {
+        options.relations = {
+          ...options.relations,
+          employeeHasPosition: {
+            staff: { headquarter: true },
+          },
+        };
+      }
+
       const result = await paginationResult(this.employeeRepository, {
-        ...pagination,
+        ..._pagination,
         options,
       });
 
@@ -162,9 +171,9 @@ export class EmployeeService {
 
   public async getItem({
     term,
-    relations = false,
-    deletes = false,
-    allRelations = false,
+    relations,
+    deletes,
+    allRelations,
   }: FindOneWhitTermAndRelationDto): Promise<EmployeeEntity> {
     try {
       const options: FindOneOptions<EmployeeEntity> = {};
@@ -213,15 +222,14 @@ export class EmployeeService {
           relations: true,
         });
 
-        // if (position_id) {
-        //   await this.employeeHasPostionService.updatePosition({
-        //     queryRunner,
-        //     id,
-        //     position_id,
-        //     employee: employee as EmployeeEntity,
-        //     positionService: this.positionService,
-        //   });
-        // }
+        if (position_id) {
+          await this.employeeHasPostionService.updatePosition({
+            queryRunner,
+            position_id,
+            employee: employee as EmployeeEntity,
+            positionService: this.positionService,
+          });
+        }
 
         if (bank_id) {
           const newBank = await this.bankService.findOne(bank_id);
@@ -239,18 +247,6 @@ export class EmployeeService {
           if (typeContract && employee.typeContract.id !== typeContract) {
             Object.assign(employee.typeContract, newTypeContract);
           }
-        }
-
-        if (position_id) {
-          const position = await this.positionService.findOne({
-            term: position_id,
-          });
-
-          await this.employeeHasPostionService.create(
-            employee,
-            position,
-            queryRunner,
-          );
         }
 
         Object.assign(employee, {

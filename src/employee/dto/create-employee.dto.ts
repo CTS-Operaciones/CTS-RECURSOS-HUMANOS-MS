@@ -1,4 +1,5 @@
 import {
+  ArrayNotEmpty,
   IsArray,
   IsDate,
   IsEmail,
@@ -144,11 +145,11 @@ export class CreateEmployeeDto implements IEmployeeCreate {
   @Min(1)
   bank_id?: number;
 
-  @IsNotEmpty()
-  @IsNumber()
-  @IsPositive()
-  @Min(1)
-  position_id: number;
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsNumber({}, { each: true })
+  @IsPositive({ each: true })
+  position_id: number[];
 
   @IsNumber()
   @IsPositive()

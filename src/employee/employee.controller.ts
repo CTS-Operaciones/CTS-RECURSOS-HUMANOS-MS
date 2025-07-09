@@ -26,8 +26,16 @@ export class EmployeeController {
   }
 
   @MessagePattern('find-one-employee')
-  getItem(@Payload() { term, relations }: FindOneWhitTermAndRelationDto) {
-    return this.employeeService.getItem({ term, relations });
+  getItem(
+    @Payload()
+    { term, relations, allRelations, deletes }: FindOneWhitTermAndRelationDto,
+  ) {
+    return this.employeeService.getItem({
+      term,
+      relations,
+      allRelations,
+      deletes,
+    });
   }
 
   @MessagePattern('update-employee')
@@ -56,18 +64,24 @@ export class AsignedPositionsController {
   @MessagePattern('asignedPositionsFindByEmployeeId')
   findPositionsById(
     @Payload()
-    { term, deletes, relations, allRelations }: FindOneWhitTermAndRelationDto,
+    { term, relations, allRelations, deletes }: FindOneWhitTermAndRelationDto,
   ) {
+    console.log({ term, relations, allRelations, deletes });
     return this.employeeHasPostionService.findOneByEmployeeId({
       term,
-      deletes,
       relations,
       allRelations,
+      deletes,
     });
   }
 
   @MessagePattern('verifyEmployeeHasPosition')
   verifyEmployeeHasPosition(@Payload() { id }: { id: number }) {
     return this.employeeHasPostionService.verifyEmployeeHasPosition(id);
+  }
+
+  @MessagePattern('deleteEmployeeHasPosition')
+  deleteEmployeeHasPosition(@Payload() { id }: { id: number }) {
+    return this.employeeHasPostionService.deletePositions(id);
   }
 }
