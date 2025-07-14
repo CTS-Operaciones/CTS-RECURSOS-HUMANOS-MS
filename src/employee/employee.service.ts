@@ -2,13 +2,17 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   DataSource,
+  DeepPartial,
   FindManyOptions,
   FindOneOptions,
-  QueryRunner,
   Repository,
   UpdateResult,
 } from 'typeorm';
-import { EmployeeEntity, EmployeeHasPositions } from 'cts-entities';
+import {
+  EmployeeEntity,
+  EmployeeHasPositions,
+  EmailEntity,
+} from 'cts-entities';
 
 import { CreateEmployeeDto, UpdateEmployeeDto } from './dto';
 
@@ -29,7 +33,7 @@ import {
   updateResult,
 } from '../common';
 import { EmployeeHasPositionService } from './employeeHasPosition.service';
-import { ContractService } from 'src/contract/contract.service';
+import { ContractService } from '../contract/contract.service';
 
 @Injectable()
 export class EmployeeService {
@@ -70,7 +74,9 @@ export class EmployeeService {
         bank_id,
         number_account_bank,
         typeContract,
+        account,
       } = payload;
+
       return await runInTransaction(this.dataSource, async (queryRunner) => {
         const position = await this.positionService.findManyByIds({
           ids: position_id,
@@ -81,6 +87,15 @@ export class EmployeeService {
         const _typeContract = await this.typeContractService.findOne({
           term: typeContract,
         });
+
+        let _email: DeepPartial<EmailEntity> | undefined = undefined;
+
+        if (account.email) {
+          _email = {
+            email: account.email,
+            required_access: account.register,
+          };
+        }
 
         const employee = await createResult(
           this.employeeRepository,
@@ -108,6 +123,7 @@ export class EmployeeService {
             number_account_bank: bank ? number_account_bank : undefined,
             bank: bank ? bank : undefined,
             typeContract: _typeContract,
+            email_cts: _email && _email,
           },
           EmployeeEntity,
           queryRunner,
@@ -146,6 +162,7 @@ export class EmployeeService {
             position_id: true,
           },
           bank: true,
+          email_cts: true,
         };
       }
 
@@ -185,6 +202,7 @@ export class EmployeeService {
             position_id: true,
           },
           typeContract: true,
+          email_cts: true,
         };
       }
 
@@ -214,7 +232,7 @@ export class EmployeeService {
   }
 
   public async updateItem({ id, ...payload }: UpdateEmployeeDto) {
-    const { position_id, bank_id, typeContract, ...data } = payload;
+    const { position_id, bank_id, typeContract, account, ...data } = payload;
     try {
       return await runInTransaction(this.dataSource, async (queryRunner) => {
         const { bank, employeeHasPosition, ...employee } = await this.getItem({
@@ -249,6 +267,14 @@ export class EmployeeService {
           }
         }
 
+        if (account && account.email) {
+          if (account.email && account.email !== employee.email_cts?.email) {
+            Object.assign(employee.email_cts.email, account.email);
+          }
+        }
+
+        // TODO: #6 Validar que se pueda eliminar la cuenta al desactivar
+
         Object.assign(employee, {
           ...data,
           bank,
@@ -259,6 +285,8 @@ export class EmployeeService {
           id,
           employee,
         );
+
+        // TODO: Notificar a Soporte del Cambio en el Email
 
         return result;
       });

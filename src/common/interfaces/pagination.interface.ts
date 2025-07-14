@@ -22,6 +22,7 @@ export interface IPaginateFilter<T> {
 export interface IRelationsEnable {
   relations?: boolean;
   deletes?: boolean;
+  allRelations?: boolean;
 }
 
 export interface IPaginateDto extends IRelationsEnable {

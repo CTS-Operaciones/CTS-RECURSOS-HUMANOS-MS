@@ -1,6 +1,7 @@
 import {
   ArrayNotEmpty,
   IsArray,
+  IsBoolean,
   IsDate,
   IsEmail,
   IsEnum,
@@ -24,6 +25,8 @@ import {
   STATUS_EMPLOYEE,
   IEmployeeCreate,
   IEmergencyContact,
+  ToBoolean,
+  IAccount,
 } from '../../common/';
 
 class EmergencyContactDto implements IEmergencyContact {
@@ -39,6 +42,18 @@ class EmergencyContactDto implements IEmergencyContact {
   @IsNotEmpty()
   @IsPhoneNumber()
   phone: string;
+}
+
+class AccountDto implements IAccount {
+  @IsNotEmpty()
+  @IsEmail()
+  email: string;
+
+  @IsBoolean()
+  @IsOptional()
+  @Type(() => Boolean)
+  @ToBoolean('register')
+  register: boolean = false;
 }
 
 export class CreateEmployeeDto implements IEmployeeCreate {
@@ -156,4 +171,9 @@ export class CreateEmployeeDto implements IEmployeeCreate {
   @IsNotEmpty()
   @Min(1)
   typeContract: number;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => AccountDto)
+  account: IAccount;
 }

@@ -10,6 +10,7 @@ import {
   deleteResult,
   ErrorManager,
   findOneByTerm,
+  PaginationDto,
   paginationResult,
   restoreResult,
   updateResult,
@@ -37,9 +38,9 @@ export class BankService {
     }
   }
 
-  async findAll() {
+  async findAll(pagination: PaginationDto) {
     try {
-      return await paginationResult(this.bankRepository, { all: true });
+      return await paginationResult(this.bankRepository, pagination);
     } catch (error) {
       throw ErrorManager.createSignatureError(error);
     }

@@ -4,9 +4,9 @@ import {
   FindOptionsWhere,
   FindOneOptions,
   ObjectLiteral,
+  In,
 } from 'typeorm';
 import { ErrorManager, msgError } from '../utils';
-import { FindOneDto } from '../dto';
 
 export async function findOneByTerm<T extends ObjectLiteral>({
   repository,

@@ -3,6 +3,7 @@ import { MessagePattern, Payload } from '@nestjs/microservices';
 import { BankService } from './bank.service';
 import { CreateBankDto } from './dto/create-bank.dto';
 import { UpdateBankDto } from './dto/update-bank.dto';
+import { PaginationDto } from 'src/common';
 
 @Controller()
 export class BankController {
@@ -14,8 +15,8 @@ export class BankController {
   }
 
   @MessagePattern('findAllBank')
-  findAll() {
-    return this.bankService.findAll();
+  findAll(@Payload() pagination: PaginationDto) {
+    return this.bankService.findAll(pagination);
   }
 
   @MessagePattern('findOneBank')

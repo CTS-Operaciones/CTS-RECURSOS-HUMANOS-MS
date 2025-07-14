@@ -4,7 +4,7 @@ import { PositionEntity, SalaryEntity, DepartmentEntity } from 'cts-entities';
 import {
   DataSource,
   FindManyOptions,
-  FindOneOptions,
+  In,
   IsNull,
   QueryRunner,
   Repository,
@@ -17,10 +17,13 @@ import {
   createResult,
   deleteResult,
   ErrorManager,
+  FindByIdsDto,
+  findManyIn,
   findOneByTerm,
   FindOneWhitTermAndRelationDto,
   IPaginationResult,
   ISalary,
+  msgError,
   PaginationRelationsDto,
   paginationResult,
   restoreResult,
@@ -131,15 +134,25 @@ export class PositionService {
     term: id,
     relations = false,
     deletes = false,
+    allRelations = false,
   }: FindOneWhitTermAndRelationDto): Promise<PositionEntity> {
     try {
       let searchField: keyof PositionEntity = 'name';
-      const options: FindOneOptions<PositionEntity> = {};
+      const options: FindManyOptions<PositionEntity> = {};
 
-      if (relations) {
+      if (relations || allRelations) {
         options.relations = {
           department: true,
           salary: true,
+        };
+      }
+
+      if (allRelations) {
+        options.relations = {
+          ...options.relations,
+          employeeHasPosition: {
+            staff: true,
+          },
         };
       }
 
@@ -165,6 +178,52 @@ export class PositionService {
     }
   }
 
+  async findManyByIds(findManyByIds: FindByIdsDto) {
+    try {
+      const { ids, deletes, relations, allRelations } = findManyByIds;
+      const options: FindManyOptions<PositionEntity> = {};
+
+      if (deletes) {
+        options.withDeleted = true;
+      }
+
+      if (relations) {
+        options.relations = {
+          salary: true,
+        };
+      }
+
+      if (allRelations) {
+        options.relations = {
+          ...options.relations,
+          department: true,
+        };
+      }
+
+      const positions = await findManyIn({
+        repository: this.positionRepository,
+        options: {
+          ...options,
+          where: { id: In(ids) },
+        },
+      });
+
+      if (positions.length !== ids.length) {
+        throw new ErrorManager({
+          code: 'NOT_ACCEPTABLE',
+          message: msgError('LENGTH_INCORRECT', {
+            ids: ids.length,
+            find: positions.length,
+          }),
+        });
+      }
+
+      return positions;
+    } catch (error) {
+      throw ErrorManager.createSignatureError(error);
+    }
+  }
+
   async update({
     id,
     ...updatePositionDto
@@ -175,14 +234,14 @@ export class PositionService {
 
         const position = await this.findOne({ term: id, relations: true });
 
-        let department = position.department;
+        let department = position[0].department;
         if (department_id && department.id !== department_id) {
           department = await this.departmentService.findOneByTerm({
             term: department_id,
           });
         }
 
-        let salaryNew = position.salary;
+        let salaryNew = position[0].salary;
         if (salary?.amount !== salaryNew.amount) {
           salaryNew = await this.findOrCreateSalary(queryRunner, {
             amount: salary?.amount || 0,
@@ -190,7 +249,7 @@ export class PositionService {
           });
         }
 
-        Object.assign(position, {
+        Object.assign(position[0], {
           name,
           salary: salaryNew,
           department,
@@ -199,7 +258,7 @@ export class PositionService {
         const result = await updateResult(
           this.positionRepository,
           id,
-          position,
+          position[0],
           queryRunner,
         );
 

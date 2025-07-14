@@ -241,13 +241,13 @@ export class EmployeeHasPositionService {
         eHp_deletes: positionsToDelete,
       };
 
-      // const staff = await sendAndHandleRpcExceptionPromise(
-      //   this.clientProxy,
-      //   'updateForChangesInEmployeeHasPositions',
-      //   payload,
-      // );
+      const staff = await sendAndHandleRpcExceptionPromise(
+        this.clientProxy,
+        'updateForChangesInEmployeeHasPositions',
+        payload,
+      );
 
-      return payload;
+      return { ...result, staff };
     } catch (error) {
       throw ErrorManager.createSignatureError(error);
     }

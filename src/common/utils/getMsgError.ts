@@ -34,6 +34,8 @@ export const msgError = (
 
     DELETE_NOT_FOUND: `Registro con id ${value} no encontrado para eliminarse`,
 
+    LENGTH_INCORRECT: `La longitud de ${value?.ids} con ${value?.find} es incorrecta`,
+
     // Activar y desactivar
     ACTIVATE: 'No se logro activar el registro',
 
@@ -56,6 +58,7 @@ export declare enum ErrorCode {
   UNAUTHORIZED_TOKEN = 'UNAUTHORIZED_TOKEN',
   REGISTER_EXIST = 'REGISTER_EXIST',
   NO_WITH_TERM = 'NO_WITH_TERM',
+  LENGTH_INCORRECT = 'LENGTH_INCORRECT',
   UPDATE_NOT_FOUND = 'UPDATE_NOT_FOUND',
   DELETE_NOT_FOUND = 'DELETE_NOT_FOUND',
   ACTIVATE = 'ACTIVATE',

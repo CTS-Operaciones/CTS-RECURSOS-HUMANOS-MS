@@ -1,7 +1,7 @@
 import { IsBoolean, IsNotEmpty, IsOptional, IsString } from 'class-validator';
-import { Transform, Type } from 'class-transformer';
+import { Type } from 'class-transformer';
 
-import { ICreateTypeContract } from '../../common';
+import { ICreateTypeContract, ToBoolean } from '../../common';
 
 export class CreateTypeContractDto implements ICreateTypeContract {
   @IsString()
@@ -11,6 +11,6 @@ export class CreateTypeContractDto implements ICreateTypeContract {
   @IsBoolean()
   @IsOptional()
   @Type(() => Boolean)
-  @Transform(({ obj }) => Boolean(obj?.isAutomatic === 'true'))
+  @ToBoolean('isAutomatic')
   isAutomatic: boolean;
 }
