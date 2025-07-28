@@ -1,13 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
 import { ClientProxy } from '@nestjs/microservices';
+import { InjectRepository } from '@nestjs/typeorm';
 import { FindOneOptions, QueryRunner, Repository } from 'typeorm';
-import {
-  EmployeeEntity,
-  EmployeeHasPositions,
-  StaffEntity,
-  IEmployee,
-} from 'cts-entities';
+import { EmployeeEntity, EmployeeHasPositions, IEmployee } from 'cts-entities';
 
 import {
   createResult,

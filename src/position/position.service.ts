@@ -108,9 +108,8 @@ export class PositionService {
       throw ErrorManager.createSignatureError(error);
     }
   }
-  async findAll(
-    pagination: PaginationRelationsDto,
-  ): Promise<IPaginationResult<PositionEntity>> {
+
+  async findAll(pagination: PaginationRelationsDto) {
     try {
       const options: FindManyOptions<PositionEntity> = {};
 
