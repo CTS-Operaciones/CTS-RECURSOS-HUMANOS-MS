@@ -128,11 +128,21 @@ export class EmployeeHasPositionService {
     }
   }
 
-  async verifyEmployeeHasPosition(id: number) {
+  async verifyEmployeeHasPosition(id: number, relations: boolean = false) {
     try {
+      const options: FindOneOptions<EmployeeHasPositions> = {};
+
+      if (relations) {
+        options.relations = {
+          employee_id: true,
+          position_id: true,
+        };
+      }
+
       const result = await findOneByTerm({
         repository: this.employeeHasPostion,
         term: id,
+        options,
       });
 
       return result;

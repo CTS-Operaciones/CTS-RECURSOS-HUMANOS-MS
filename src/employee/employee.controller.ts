@@ -75,8 +75,13 @@ export class AsignedPositionsController {
   }
 
   @MessagePattern('verifyEmployeeHasPosition')
-  verifyEmployeeHasPosition(@Payload() { id }: { id: number }) {
-    return this.employeeHasPostionService.verifyEmployeeHasPosition(id);
+  verifyEmployeeHasPosition(
+    @Payload() { id, relations = false }: { id: number; relations: boolean },
+  ) {
+    return this.employeeHasPostionService.verifyEmployeeHasPosition(
+      id,
+      relations,
+    );
   }
 
   @MessagePattern('deleteEmployeeHasPosition')
