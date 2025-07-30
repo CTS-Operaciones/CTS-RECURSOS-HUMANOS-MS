@@ -66,7 +66,6 @@ export class AsignedPositionsController {
     @Payload()
     { term, relations, allRelations, deletes }: FindOneWhitTermAndRelationDto,
   ) {
-    console.log({ term, relations, allRelations, deletes });
     return this.employeeHasPostionService.findOneByEmployeeId({
       term,
       relations,

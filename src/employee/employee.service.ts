@@ -149,7 +149,7 @@ export class EmployeeService {
     pagination: PaginationFilterStatusDto<EmployeeEntity>,
   ): Promise<IPaginationDto<EmployeeEntity>> {
     try {
-      const { relations, all, status, ..._pagination } = pagination;
+      const { relations, status, ..._pagination } = pagination;
       const options: FindManyOptions<EmployeeEntity> = {};
 
       if (status) {
@@ -160,18 +160,10 @@ export class EmployeeService {
         options.relations = {
           employeeHasPosition: {
             position_id: true,
+            staff: { headquarter: true },
           },
           bank: true,
           email_cts: true,
-        };
-      }
-
-      if (all) {
-        options.relations = {
-          ...options.relations,
-          employeeHasPosition: {
-            staff: { headquarter: true },
-          },
         };
       }
 
@@ -210,6 +202,7 @@ export class EmployeeService {
         options.relations = {
           ...options.relations,
           employeeHasPosition: {
+            position_id: true,
             staff: { bondHasStaff: true, headquarter: true },
           },
         };
