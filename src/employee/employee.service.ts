@@ -228,10 +228,11 @@ export class EmployeeService {
     const { position_id, bank_id, typeContract, account, ...data } = payload;
     try {
       return await runInTransaction(this.dataSource, async (queryRunner) => {
-        const { bank, employeeHasPosition, ...employee } = await this.getItem({
-          term: id,
-          relations: true,
-        });
+        const { bank, employeeHasPosition, email_cts, ...employee } =
+          await this.getItem({
+            term: id,
+            relations: true,
+          });
 
         if (position_id) {
           await this.employeeHasPostionService.updatePosition({
@@ -261,8 +262,10 @@ export class EmployeeService {
         }
 
         if (account && account.email) {
-          if (account.email && account.email !== employee.email_cts?.email) {
-            Object.assign(employee.email_cts.email, account.email);
+          if (account.email && account.email !== email_cts?.email) {
+            Object.assign(email_cts.email, account.email);
+
+            // TODO: Notificar a Soporte del Cambio en el Email
           }
         }
 
@@ -273,13 +276,15 @@ export class EmployeeService {
           bank,
         });
 
-        const result = await updateResult(
+        const result = await createResult(
           this.employeeRepository,
-          id,
-          employee,
+          {
+            email_cts,
+            ...employee,
+          },
+          EmployeeEntity,
+          queryRunner,
         );
-
-        // TODO: Notificar a Soporte del Cambio en el Email
 
         return result;
       });
