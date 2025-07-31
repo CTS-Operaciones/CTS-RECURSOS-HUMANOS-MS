@@ -263,7 +263,7 @@ export class EmployeeService {
 
         if (account && account.email) {
           if (account.email && account.email !== email_cts?.email) {
-            Object.assign(email_cts.email, account.email);
+            email_cts.email = account.email;
 
             // TODO: Notificar a Soporte del Cambio en el Email
           }
