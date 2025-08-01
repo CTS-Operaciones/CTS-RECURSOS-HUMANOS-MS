@@ -10,6 +10,8 @@ export const msgError = (
 
     NO_VALUE: `No se obtuvo el valor de ${value}`,
 
+    NO_GET_PARAM: `No se obtuvo el parametro requerido`,
+
     FORMAT_INCORRECT: `Formato incorrecto para ${value} - ${typeof value}`,
 
     // Errores de autenticación
@@ -49,6 +51,7 @@ export declare enum ErrorCode {
   MSG = 'MSG',
   NOT_FOUND = 'NOT_FOUND',
   NO_VALUE = 'NO_VALUE',
+  NO_GET_PARAM = 'NO_GET_PARAM',
   FORMAT_INCORRECT = 'FORMAT_INCORRECT',
   UNAUTHORIZED_NOT_FOUND = 'UNAUTHORIZED_NOT_FOUND',
   UNAUTHORIZED_CREDENTIALS = 'UNAUTHORIZED_CREDENTIALS',

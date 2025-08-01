@@ -1,6 +1,7 @@
 import {
   IsNotEmpty,
   IsNumber,
+  IsOptional,
   IsPositive,
   IsString,
   MaxLength,
@@ -37,7 +38,11 @@ export class CreatePositionDto implements ICreatePosition {
 
   @IsNumber()
   @IsPositive()
-  @IsNotEmpty()
-  @Min(1)
-  department_id: number;
+  @IsOptional()
+  department_id?: number = undefined;
+
+  @IsNumber()
+  @IsPositive()
+  @IsOptional()
+  parent?: number;
 }

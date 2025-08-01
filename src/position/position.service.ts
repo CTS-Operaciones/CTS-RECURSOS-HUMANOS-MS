@@ -8,6 +8,7 @@ import {
   IsNull,
   QueryRunner,
   Repository,
+  TreeRepository,
   UpdateResult,
 } from 'typeorm';
 
@@ -21,11 +22,11 @@ import {
   findManyIn,
   findOneByTerm,
   FindOneWhitTermAndRelationDto,
-  IPaginationResult,
   ISalary,
   msgError,
   PaginationRelationsDto,
   paginationResult,
+  RelationsDto,
   restoreResult,
   runInTransaction,
   updateResult,
@@ -36,6 +37,8 @@ export class PositionService {
   constructor(
     @InjectRepository(PositionEntity)
     private readonly positionRepository: Repository<PositionEntity>,
+    @InjectRepository(PositionEntity)
+    private readonly positionRepo: TreeRepository<PositionEntity>,
     @InjectRepository(SalaryEntity)
     private readonly salaryRepository: Repository<SalaryEntity>,
     private readonly dataSource: DataSource,
@@ -45,12 +48,35 @@ export class PositionService {
   async create(createPositionDto: CreatePositionDto) {
     try {
       return runInTransaction(this.dataSource, async (queryRunner) => {
-        const { name, salary, department_id } = createPositionDto;
+        const {
+          salary,
+          department_id,
+          parent = undefined,
+          ...payload
+        } = createPositionDto;
         const { salary_in_words, amount } = salary;
 
-        const department = await this.departmentService.findOneByTerm({
-          term: department_id,
-        });
+        if (parent) {
+          const {
+            salary: _,
+            department,
+            ...boos
+          } = await this.findOne({
+            term: parent,
+            relations: true,
+          });
+
+          payload['parent'] = { id: boos.id };
+          payload['department'] = department;
+        } else if (department_id) {
+          const department = await this.departmentService.findOneByTerm({
+            term: department_id,
+          });
+
+          payload['department'] = department;
+        } else {
+          throw new ErrorManager(msgError('NO_GET_PARAM'));
+        }
 
         const salaryCrated = await this.findOrCreateSalary(queryRunner, {
           amount,
@@ -58,11 +84,10 @@ export class PositionService {
         });
 
         const position = await createResult(
-          this.positionRepository,
+          this.positionRepo,
           {
-            name,
+            ...payload,
             salary: salaryCrated,
-            department,
           },
           PositionEntity,
           queryRunner,
@@ -113,17 +138,67 @@ export class PositionService {
     try {
       const options: FindManyOptions<PositionEntity> = {};
 
-      if (pagination.relations) {
+      const positionsBoos = await this.positionRepo.findTrees();
+
+      console.dir(positionsBoos, { depth: null });
+
+      // if (pagination.relations) {
+      //   options.relations = {
+      //     department: true,
+      //     salary: true,
+      //     parent: true,
+      //   };
+      // }
+
+      return positionsBoos;
+    } catch (error) {
+      throw ErrorManager.createSignatureError(error);
+    }
+  }
+
+  private async findRecursiveByParent({
+    id = undefined,
+    parent = false,
+    pagination,
+  }: {
+    id?: number;
+    parent: boolean;
+    pagination: PaginationRelationsDto;
+  }) {
+    try {
+      const {
+        all = false,
+        limit = 10,
+        page = 1,
+        relations = false,
+      } = pagination;
+
+      const options: FindManyOptions<PositionEntity> = {};
+
+      if (id) {
+        options.where = { parent: { id } };
+      } else if (parent) {
+        options.where = { parent: IsNull() };
+      } else {
+        throw new ErrorManager(msgError('NO_GET_PARAM'));
+      }
+
+      if (relations) {
         options.relations = {
-          department: true,
+          parent: true,
           salary: true,
+          department: true,
         };
       }
 
-      return await paginationResult(this.positionRepository, {
-        ...pagination,
-        options,
-      });
+      if (!all) {
+        options.take = all ? undefined : limit;
+        options.skip = all ? undefined : (page - 1) * limit;
+      }
+
+      const positions = await this.positionRepository.find(options);
+
+      return positions;
     } catch (error) {
       throw ErrorManager.createSignatureError(error);
     }
@@ -231,33 +306,33 @@ export class PositionService {
       return runInTransaction(this.dataSource, async (queryRunner) => {
         const { name, salary, department_id } = updatePositionDto;
 
-        const position = await this.findOne({ term: id, relations: true });
+        const {
+          department,
+          salary: _salary,
+          ...position
+        } = await this.findOne({ term: id, relations: true });
 
-        let department = position[0].department;
         if (department_id && department.id !== department_id) {
-          department = await this.departmentService.findOneByTerm({
+          position['department'] = await this.departmentService.findOneByTerm({
             term: department_id,
           });
         }
 
-        let salaryNew = position[0].salary;
-        if (salary?.amount !== salaryNew.amount) {
-          salaryNew = await this.findOrCreateSalary(queryRunner, {
+        if (salary && salary?.amount !== salary.amount) {
+          position['salary'] = await this.findOrCreateSalary(queryRunner, {
             amount: salary?.amount || 0,
             salary_in_words: salary?.salary_in_words || '',
           });
         }
 
-        Object.assign(position[0], {
+        Object.assign(position, {
           name,
-          salary: salaryNew,
-          department,
         });
 
         const result = await updateResult(
           this.positionRepository,
           id,
-          position[0],
+          position,
           queryRunner,
         );
 

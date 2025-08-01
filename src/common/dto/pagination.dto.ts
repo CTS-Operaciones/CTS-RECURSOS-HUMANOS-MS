@@ -39,6 +39,14 @@ export class PaginationRelationsDto extends PaginationDto {
   relations?: boolean;
 }
 
+export class RelationsDto {
+  @IsBoolean()
+  @IsOptional()
+  @Type(() => Boolean)
+  @ToBoolean('relations')
+  relations?: boolean = false;
+}
+
 export class PaginationFilterStatusDto<T>
   extends PaginationRelationsDto
   implements IPaginateFilter<T>
