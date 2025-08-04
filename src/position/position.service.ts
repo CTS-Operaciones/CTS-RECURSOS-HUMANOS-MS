@@ -4,6 +4,7 @@ import { PositionEntity, SalaryEntity, DepartmentEntity } from 'cts-entities';
 import {
   DataSource,
   FindManyOptions,
+  FindTreeOptions,
   In,
   IsNull,
   QueryRunner,
@@ -25,8 +26,6 @@ import {
   ISalary,
   msgError,
   PaginationRelationsDto,
-  paginationResult,
-  RelationsDto,
   restoreResult,
   runInTransaction,
   updateResult,
@@ -136,19 +135,9 @@ export class PositionService {
 
   async findAll(pagination: PaginationRelationsDto) {
     try {
-      const options: FindManyOptions<PositionEntity> = {};
+      const options: FindTreeOptions = {};
 
       const positionsBoos = await this.positionRepo.findTrees();
-
-      console.dir(positionsBoos, { depth: null });
-
-      // if (pagination.relations) {
-      //   options.relations = {
-      //     department: true,
-      //     salary: true,
-      //     parent: true,
-      //   };
-      // }
 
       return positionsBoos;
     } catch (error) {
@@ -218,6 +207,7 @@ export class PositionService {
         options.relations = {
           department: true,
           salary: true,
+          parent: true,
         };
       }
 
@@ -298,17 +288,15 @@ export class PositionService {
     }
   }
 
-  async update({
-    id,
-    ...updatePositionDto
-  }: UpdatePositionDto): Promise<UpdateResult> {
+  async update({ id, ...updatePositionDto }: UpdatePositionDto) {
     try {
       return runInTransaction(this.dataSource, async (queryRunner) => {
-        const { name, salary, department_id } = updatePositionDto;
+        const { name, salary, department_id, parent } = updatePositionDto;
 
         const {
           department,
           salary: _salary,
+          parent: _parent,
           ...position
         } = await this.findOne({ term: id, relations: true });
 
@@ -325,14 +313,20 @@ export class PositionService {
           });
         }
 
+        if (parent && parent !== _parent?.id) {
+          position['parent'] = await this.findOne({
+            term: parent,
+          });
+        }
+
         Object.assign(position, {
           name,
         });
 
-        const result = await updateResult(
-          this.positionRepository,
-          id,
+        const result = await createResult(
+          this.positionRepo,
           position,
+          PositionEntity,
           queryRunner,
         );
 
