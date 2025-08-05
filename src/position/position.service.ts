@@ -145,54 +145,6 @@ export class PositionService {
     }
   }
 
-  private async findRecursiveByParent({
-    id = undefined,
-    parent = false,
-    pagination,
-  }: {
-    id?: number;
-    parent: boolean;
-    pagination: PaginationRelationsDto;
-  }) {
-    try {
-      const {
-        all = false,
-        limit = 10,
-        page = 1,
-        relations = false,
-      } = pagination;
-
-      const options: FindManyOptions<PositionEntity> = {};
-
-      if (id) {
-        options.where = { parent: { id } };
-      } else if (parent) {
-        options.where = { parent: IsNull() };
-      } else {
-        throw new ErrorManager(msgError('NO_GET_PARAM'));
-      }
-
-      if (relations) {
-        options.relations = {
-          parent: true,
-          salary: true,
-          department: true,
-        };
-      }
-
-      if (!all) {
-        options.take = all ? undefined : limit;
-        options.skip = all ? undefined : (page - 1) * limit;
-      }
-
-      const positions = await this.positionRepository.find(options);
-
-      return positions;
-    } catch (error) {
-      throw ErrorManager.createSignatureError(error);
-    }
-  }
-
   async findOne({
     term: id,
     relations = false,
