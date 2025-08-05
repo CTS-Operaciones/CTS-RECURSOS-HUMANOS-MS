@@ -23,6 +23,7 @@ import {
   findManyIn,
   findOneByTerm,
   FindOneWhitTermAndRelationDto,
+  IPaginationResult,
   ISalary,
   msgError,
   PaginationRelationsDto,
@@ -133,13 +134,26 @@ export class PositionService {
     }
   }
 
-  async findAll(pagination: PaginationRelationsDto) {
+  // TODO: #7 Paginar
+  async findAll(
+    pagination: PaginationRelationsDto,
+  ): Promise<IPaginationResult<PositionEntity>> {
     try {
       const options: FindTreeOptions = {};
 
-      const positionsBoos = await this.positionRepo.findTrees();
+      if (pagination.relations) {
+        options.relations = ['department', 'salary'];
+      }
 
-      return positionsBoos;
+      const positionsBoos = await this.positionRepo.findTrees(options);
+
+      return {
+        limit: 0,
+        page: 0,
+        totalPages: 0,
+        totalResult: 0,
+        data: positionsBoos,
+      };
     } catch (error) {
       throw ErrorManager.createSignatureError(error);
     }
