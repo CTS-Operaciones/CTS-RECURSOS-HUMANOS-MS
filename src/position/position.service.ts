@@ -27,10 +27,11 @@ import {
   ISalary,
   msgError,
   PaginationRelationsDto,
+  paginationResult,
   restoreResult,
   runInTransaction,
-  updateResult,
 } from '../common';
+import { IsMilitaryTime } from 'class-validator';
 
 @Injectable()
 export class PositionService {
@@ -129,6 +130,29 @@ export class PositionService {
       }
 
       return salaryCrated;
+    } catch (error) {
+      throw ErrorManager.createSignatureError(error);
+    }
+  }
+
+  async findAllPlainresponse(pagination: PaginationRelationsDto) {
+    try {
+      const { relations, ..._pagination } = pagination;
+      const options: FindManyOptions<PositionEntity> = {};
+
+      if (relations) {
+        options.relations = {
+          department: true,
+          salary: true,
+        };
+      }
+
+      const positions = await paginationResult(this.positionRepository, {
+        ..._pagination,
+        options,
+      });
+
+      return positions;
     } catch (error) {
       throw ErrorManager.createSignatureError(error);
     }
