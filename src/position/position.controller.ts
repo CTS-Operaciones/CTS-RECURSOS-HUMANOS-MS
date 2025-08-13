@@ -17,7 +17,7 @@ export class PositionController {
     return this.positionsService.create(createPositionDto);
   }
 
-  @MessagePattern('find-all-postion-plainformat')
+  @MessagePattern('find-all-positions-plainformat')
   findAllPlainFormat(@Payload() pagination: PaginationRelationsDto) {
     return this.positionsService.findAllPlainresponse(pagination);
   }
