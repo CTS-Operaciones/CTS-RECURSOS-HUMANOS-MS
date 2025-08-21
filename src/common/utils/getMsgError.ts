@@ -36,6 +36,8 @@ export const msgError = (
 
     DELETE_NOT_FOUND: `Registro con id ${value} no encontrado para eliminarse`,
 
+    REGISTER_NOT_DELETE_ALLOWED: `No se puede eliminar el registro con id ${value} porque tiene relaciones asignadas`,
+
     LENGTH_INCORRECT: `La longitud de ${value?.ids} con ${value?.find} es incorrecta`,
 
     // Activar y desactivar
@@ -64,6 +66,7 @@ export declare enum ErrorCode {
   LENGTH_INCORRECT = 'LENGTH_INCORRECT',
   UPDATE_NOT_FOUND = 'UPDATE_NOT_FOUND',
   DELETE_NOT_FOUND = 'DELETE_NOT_FOUND',
+  REGISTER_NOT_DELETE_ALLOWED = 'REGISTER_NOT_DELETE_ALLOWED',
   ACTIVATE = 'ACTIVATE',
   DEACTIVATE = 'DEACTIVATE',
 }

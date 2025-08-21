@@ -329,6 +329,18 @@ export class PositionService {
 
   async remove(id: number): Promise<UpdateResult> {
     try {
+      const position = await this.findOne({
+        term: id,
+        allRelations: true,
+      });
+
+      if (position?.employeeHasPosition?.length > 0) {
+        throw new ErrorManager({
+          code: 'NOT_ACCEPTABLE',
+          message: msgError('REGISTER_NOT_DELETE_ALLOWED', id),
+        });
+      }
+      
       const result = await deleteResult(this.positionRepository, id);
 
       return result;
