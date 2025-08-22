@@ -187,8 +187,9 @@ export class EmployeeHasPositionService {
       });
 
       const positionsToDelete = employeeHasPosition.filter((position) => {
+        console.log(!position_id.includes(position.position_id.id));
         return (
-          position.deleted_at === null &&
+          position.deleted_at === undefined &&
           !position_id.includes(position.position_id.id)
         );
       });
