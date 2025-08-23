@@ -1,7 +1,14 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOneOptions, QueryRunner, Repository } from 'typeorm';
+import {
+  FindOneOptions,
+  IsNull,
+  Not,
+  Or,
+  QueryRunner,
+  Repository,
+} from 'typeorm';
 import { EmployeeEntity, EmployeeHasPositions, IEmployee } from 'cts-entities';
 
 import {
@@ -177,26 +184,35 @@ export class EmployeeHasPositionService {
     positionService: PositionService;
   }) {
     try {
-      const employeeHasPosition = await this.employeeHasPostion.find({
-        where: { employee_id: { id: employee.id } },
-        withDeleted: true,
-        relations: {
-          position_id: true,
-          staff: true,
-        },
-      });
+      const employeeHasPosition = await this.employeeHasPostion
+        .createQueryBuilder('ehp')
+        .addSelect('ehp.available')
+        .addSelect('ehp.deleted_at')
+        .leftJoinAndSelect('ehp.employee_id', 'employee')
+        .leftJoinAndSelect('ehp.position_id', 'position')
+        .leftJoinAndSelect('ehp.staff', 'staff')
+        .leftJoinAndSelect('staff.headquarter', 'hq')
+        .where('ehp.employee_id = :id', { id: employee.id })
+        .withDeleted()
+        .getMany();
 
       const positionsToDelete = employeeHasPosition.filter((position) => {
-        console.log(!position_id.includes(position.position_id.id));
         return (
-          position.deleted_at === undefined &&
+          position.deleted_at === null &&
           !position_id.includes(position.position_id.id)
         );
       });
 
       await Promise.all(
-        positionsToDelete.map(async ({ id }) => {
-          await deleteResult(this.employeeHasPostion, id, queryRunner);
+        positionsToDelete.map(async ({ id, staff }) => {
+          if (staff && staff.length > 0) {
+            throw new ErrorManager({
+              code: 'NOT_ACCEPTABLE',
+              message: msgError('REGISTER_NOT_DELETE_ALLOWED', id),
+            });
+          }
+
+          return await deleteResult(this.employeeHasPostion, id, queryRunner);
         }),
       );
 

@@ -10,6 +10,7 @@ import {
   findOneByTerm,
   FindOneWhitTermAndRelationDto,
   IPaginationResult,
+  msgError,
   PaginationRelationsDto,
   paginationResult,
   restoreResult,
@@ -145,6 +146,15 @@ export class DepartmentService {
 
   async remove(id: number) {
     try {
+      const department = await this.findOneById({ term: id, relations: true });
+
+      if (department.positions.length > 0) {
+        throw new ErrorManager({
+          code: 'NOT_ACCEPTABLE',
+          message: msgError('REGISTER_NOT_DELETE_ALLOWED', id),
+        });
+      }
+
       return await deleteResult(this.departmentRepository, id);
     } catch (error) {
       throw ErrorManager.createSignatureError(error);

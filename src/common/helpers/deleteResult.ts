@@ -1,4 +1,5 @@
 import { ObjectLiteral, QueryRunner, Repository, UpdateResult } from 'typeorm';
+import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 import { ErrorManager, msgError } from '../utils';
 
 export async function deleteResult<T extends ObjectLiteral>(
@@ -9,6 +10,10 @@ export async function deleteResult<T extends ObjectLiteral>(
   const repo = queryRunner
     ? queryRunner.manager.getRepository(repository.metadata.target)
     : repository;
+
+  await repo.update(id, {
+    available: false,
+  } as unknown as QueryDeepPartialEntity<T>);
 
   const deleteRegister = await repo.softDelete(id);
 
@@ -32,6 +37,10 @@ export async function restoreResult<T extends ObjectLiteral>(
     : repository;
 
   const restoreRegister = await repo.restore(id);
+
+  await repo.update(id, {
+    available: true,
+  } as unknown as QueryDeepPartialEntity<T>);
 
   if (restoreRegister.affected === 0) {
     throw new ErrorManager({
