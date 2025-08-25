@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { FindOneOptions, Repository } from 'typeorm';
 import { BankEntity } from 'cts-entities';
 
 import { CreateBankDto } from './dto/create-bank.dto';
@@ -10,6 +10,7 @@ import {
   deleteResult,
   ErrorManager,
   findOneByTerm,
+  msgError,
   PaginationDto,
   paginationResult,
   restoreResult,
@@ -46,11 +47,16 @@ export class BankService {
     }
   }
 
-  async findOne(id: number) {
+  async findOne(id: number, relations: boolean = false) {
     try {
+      const options: FindOneOptions<BankEntity> = {};
+
+      if (relations) options.relations = { employees: true };
+
       const result = await findOneByTerm<BankEntity>({
         repository: this.bankRepository,
         term: id,
+        options,
       });
 
       return result;
@@ -73,6 +79,15 @@ export class BankService {
 
   async remove(id: number) {
     try {
+      const bank = await this.findOne(id, true);
+
+      if (bank.employees.length > 0) {
+        throw new ErrorManager({
+          code: 'NOT_ACCEPTABLE',
+          message: msgError('REGISTER_NOT_DELETE_ALLOWED', id),
+        });
+      }
+
       return await deleteResult(this.bankRepository, id);
     } catch (error) {
       throw ErrorManager.createSignatureError(error);

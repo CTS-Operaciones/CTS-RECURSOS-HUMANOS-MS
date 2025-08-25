@@ -26,11 +26,11 @@ import {
   findOneByTerm,
   FindOneWhitTermAndRelationDto,
   IPaginationDto,
+  msgError,
   PaginationFilterStatusDto,
   paginationResult,
   restoreResult,
   runInTransaction,
-  updateResult,
 } from '../common';
 import { EmployeeHasPositionService } from './employeeHasPosition.service';
 import { ContractService } from '../contract/contract.service';
@@ -322,6 +322,22 @@ export class EmployeeService {
 
   public async deleteItem(id: number): Promise<UpdateResult> {
     try {
+      const employee = await this.getItem({
+        term: id,
+        allRelations: true,
+      });
+
+      if (
+        employee.employeeHasPosition.some((ehp) =>
+          ehp.staff.some((s) => s.available === true),
+        )
+      ) {
+        throw new ErrorManager({
+          code: 'NOT_ACCEPTABLE',
+          message: msgError('REGISTER_NOT_DELETE_ALLOWED', id),
+        });
+      }
+
       const result = await deleteResult(this.employeeRepository, id);
       return result;
     } catch (error) {

@@ -195,9 +195,9 @@ export class DocumentService {
 
   async remove(id: number): Promise<IResponseUpdateDocument> {
     try {
-      const document = await deleteResult(this.documentRepository, id);
-      // TODO: Retornar el patch del documento
-      return { result: document, old_file: '' };
+      const result = await deleteResult(this.documentRepository, id);
+
+      return { result, old_file: '' };
     } catch (error) {
       throw ErrorManager.createSignatureError(error);
     }
