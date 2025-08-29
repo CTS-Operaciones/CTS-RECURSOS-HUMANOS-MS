@@ -165,10 +165,11 @@ export class EmployeeService {
         nacionality,
         gener,
         blood,
+        statusCivil,
         dismissal,
         presence,
-        statusCivil,
         vacation,
+        relations = false,
         all = false,
         limit = 10,
         page = 1,
@@ -187,25 +188,26 @@ export class EmployeeService {
         emailAlias = 'email',
         staffAlias = 'staff',
         bondsHasStaffAlias = 'bondsHasStaff',
-        bondAlias = 'bond';
+        bondAlias = 'bond',
+        dismissalAlias = 'dismissal';
 
       const employeesQuery =
         this.employeeRepository.createQueryBuilder(employeeAlias);
 
-      if (position || staff || bonds) {
+      if (relations || position || staff || bonds) {
         employeesQuery.leftJoinAndSelect(
           `${col<EmployeeEntity>(employeeAlias, 'employeeHasPosition')}`,
           employeeHasPositionAlias,
         );
 
-        if (account) {
+        if (relations || account) {
           employeesQuery.leftJoinAndSelect(
             `${col<EmployeeEntity>(employeeAlias, 'email_cts')}`,
             emailAlias,
           );
         }
 
-        if (position)
+        if (relations || position)
           employeesQuery
             .leftJoinAndSelect(
               `${col<EmployeeHasPositions>(employeeHasPositionAlias, 'position_id')}`,
@@ -220,13 +222,13 @@ export class EmployeeService {
               deparmentAlias,
             );
 
-        if (staff || bonds) {
+        if (relations || staff || bonds || dismissal || presence || vacation) {
           employeesQuery.leftJoinAndSelect(
             `${col<EmployeeHasPositions>(employeeHasPositionAlias, 'staff')}`,
             staffAlias,
           );
 
-          if (bonds) {
+          if (relations || bonds) {
             employeesQuery
               .leftJoinAndSelect(
                 `${col<StaffEntity>(staffAlias, 'bondHasStaff')}`,
@@ -237,24 +239,31 @@ export class EmployeeService {
                 bondAlias,
               );
           }
+
+          if (relations || dismissal) {
+            employeesQuery.leftJoinAndSelect(
+              `${col<StaffEntity>(staffAlias, 'dismissals')}`,
+              dismissalAlias,
+            );
+          }
         }
       }
 
-      if (documents) {
+      if (relations || documents) {
         employeesQuery.leftJoinAndSelect(
           `${col<EmployeeEntity>(employeeAlias, 'document')}`,
           documentsAlias,
         );
       }
 
-      if (bank) {
+      if (relations || bank) {
         employeesQuery.leftJoinAndSelect(
           `${col<EmployeeEntity>(employeeAlias, 'bank')}`,
           bankAlias,
         );
       }
 
-      if (contract) {
+      if (relations || contract) {
         employeesQuery.leftJoinAndSelect(
           `${col<EmployeeEntity>(employeeAlias, 'typeContract')}`,
           typeContractAlias,
@@ -297,17 +306,28 @@ export class EmployeeService {
         );
       }
 
+      if (statusCivil) {
+        employeesQuery.andWhere(
+          `${col<EmployeeEntity>(employeeAlias, 'status_civil')} = :statusCivil`,
+          {
+            statusCivil,
+          },
+        );
+      }
+
       if (!all) {
         employeesQuery.limit(limit).offset(skip);
       }
 
-      const result = await employeesQuery.getMany();
+      const [result, totalResult] = await employeesQuery.getManyAndCount();
+
+      const totalPages = all ? 1 : Math.ceil(totalResult / limit);
 
       return {
-        page,
-        limit,
-        totalResult: result.length,
-        totalPages: 1,
+        page: Number(all ? 1 : page),
+        limit: Number(all ? totalResult : limit),
+        totalResult,
+        totalPages,
         data: result,
       };
     } catch (error) {
