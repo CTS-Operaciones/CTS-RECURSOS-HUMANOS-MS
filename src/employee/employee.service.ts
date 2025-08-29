@@ -3,7 +3,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import {
   DataSource,
   DeepPartial,
-  FindManyOptions,
   FindOneOptions,
   Repository,
   UpdateResult,
@@ -13,8 +12,6 @@ import {
   EmployeeHasPositions,
   EmailEntity,
   STATUS_EMPLOYEE,
-  BankEntity,
-  BondEntity,
   PositionEntity,
   StaffEntity,
   BondHasStaff,
@@ -33,10 +30,8 @@ import {
   FilterRelationsDto,
   findOneByTerm,
   FindOneWhitTermAndRelationDto,
-  IPaginationDto,
+  IPaginationResult,
   msgError,
-  PaginationFilterStatusEmployeeDto,
-  paginationResult,
   restoreResult,
   runInTransaction,
 } from '../common';
@@ -153,7 +148,9 @@ export class EmployeeService {
     }
   }
 
-  public async getItems(pagination: FilterRelationsDto<EmployeeEntity>) {
+  public async getItems(
+    pagination: FilterRelationsDto<EmployeeEntity>,
+  ): Promise<IPaginationResult<EmployeeEntity>> {
     try {
       const {
         status = STATUS_EMPLOYEE.ACTIVE,
@@ -306,7 +303,13 @@ export class EmployeeService {
 
       const result = await employeesQuery.getMany();
 
-      return result;
+      return {
+        page,
+        limit,
+        totalResult: result.length,
+        totalPages: 1,
+        data: result,
+      };
     } catch (error) {
       throw ErrorManager.createSignatureError(error);
     }
