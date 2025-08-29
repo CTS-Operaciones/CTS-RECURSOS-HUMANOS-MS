@@ -2,6 +2,7 @@ export * from './createResult';
 export * from './deleteResult';
 export * from './findManyInResult';
 export * from './findOneResult';
+export * from './getColName';
 export * from './paginationResult';
 export * from './rcp-helper';
 export * from './runTransaction';

@@ -9,9 +9,15 @@ import {
   QueryRunner,
   Repository,
 } from 'typeorm';
-import { EmployeeEntity, EmployeeHasPositions, IEmployee } from 'cts-entities';
+import {
+  EmployeeEntity,
+  EmployeeHasPositions,
+  IEmployee,
+  StaffEntity,
+} from 'cts-entities';
 
 import {
+  col,
   createResult,
   deleteResult,
   ErrorManager,
@@ -184,15 +190,40 @@ export class EmployeeHasPositionService {
     positionService: PositionService;
   }) {
     try {
+      const employeeHasPositionAlias = 'ehp',
+        employeeAlias = 'employee',
+        positionAlias = 'position',
+        staffAlias = 'staff',
+        headquarterAlias = 'headquarter';
+
       const employeeHasPosition = await this.employeeHasPostion
-        .createQueryBuilder('ehp')
-        .addSelect('ehp.available')
-        .addSelect('ehp.deleted_at')
-        .leftJoinAndSelect('ehp.employee_id', 'employee')
-        .leftJoinAndSelect('ehp.position_id', 'position')
-        .leftJoinAndSelect('ehp.staff', 'staff')
-        .leftJoinAndSelect('staff.headquarter', 'hq')
-        .where('ehp.employee_id = :id', { id: employee.id })
+        .createQueryBuilder(employeeHasPositionAlias)
+        .addSelect(
+          `${col<EmployeeHasPositions>(employeeHasPositionAlias, 'available')}`,
+        )
+        .addSelect(
+          `${col<EmployeeHasPositions>(employeeHasPositionAlias, 'deleted_at')}`,
+        )
+        .leftJoinAndSelect(
+          `${col<EmployeeHasPositions>(employeeHasPositionAlias, 'employee_id')}`,
+          employeeAlias,
+        )
+        .leftJoinAndSelect(
+          `${col<EmployeeHasPositions>(employeeHasPositionAlias, 'position_id')}`,
+          positionAlias,
+        )
+        .leftJoinAndSelect(
+          `${col<EmployeeHasPositions>(employeeHasPositionAlias, 'staff')}`,
+          staffAlias,
+        )
+        .leftJoinAndSelect(
+          `${col<StaffEntity>(staffAlias, 'headquarter')}`,
+          headquarterAlias,
+        )
+        .where(
+          `${col<EmployeeHasPositions>(employeeHasPositionAlias, 'employee_id')} = :id`,
+          { id: employee.id },
+        )
         .withDeleted()
         .getMany();
 

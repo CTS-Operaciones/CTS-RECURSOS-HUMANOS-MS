@@ -1,5 +1,4 @@
 export * from './config/envs.validate';
-export * from './constants/enums';
 export * from './constants/services';
 export * from './decorators/toBoolean.decorator';
 export * from './dto/findByIds.dto';
@@ -9,6 +8,7 @@ export * from './helpers/createResult';
 export * from './helpers/deleteResult';
 export * from './helpers/findManyInResult';
 export * from './helpers/findOneResult';
+export * from './helpers/getColName';
 export * from './helpers/paginationResult';
 export * from './helpers/rcp-helper';
 export * from './helpers/runTransaction';

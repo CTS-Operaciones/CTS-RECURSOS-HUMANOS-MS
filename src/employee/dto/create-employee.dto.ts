@@ -16,13 +16,15 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-
 import {
   BLOOD_TYPE,
   GENDER,
   NACIONALITY_EMPLOYEE,
-  STATUS_CIVIL,
   STATUS_EMPLOYEE,
+  STATUS_CIVIL,
+} from 'cts-entities';
+
+import {
   IEmployeeCreate,
   IEmergencyContact,
   ToBoolean,

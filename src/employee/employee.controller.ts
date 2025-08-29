@@ -5,11 +5,9 @@ import { EmployeeEntity } from 'cts-entities';
 import { EmployeeService } from './employee.service';
 import { CreateEmployeeDto, UpdateEmployeeDto } from './dto';
 
-import {
-  FindOneWhitTermAndRelationDto,
-  PaginationFilterStatusDto,
-} from '../common';
+import { FilterRelationsDto, FindOneWhitTermAndRelationDto } from '../common';
 import { EmployeeHasPositionService } from './employeeHasPosition.service';
+import { plainToClass } from 'class-transformer';
 
 @Controller({ path: 'employee', version: '1' })
 export class EmployeeController {
@@ -21,21 +19,18 @@ export class EmployeeController {
   }
 
   @MessagePattern('findAll-employees')
-  getItems(@Payload() pagination: PaginationFilterStatusDto<EmployeeEntity>) {
+  getItems(@Payload() pagination: FilterRelationsDto<EmployeeEntity>) {
     return this.employeeService.getItems(pagination);
   }
 
   @MessagePattern('find-one-employee')
   getItem(
     @Payload()
-    { term, relations, allRelations, deletes }: FindOneWhitTermAndRelationDto,
+    payload: object,
   ) {
-    return this.employeeService.getItem({
-      term,
-      relations,
-      allRelations,
-      deletes,
-    });
+    const dto = plainToClass(FindOneWhitTermAndRelationDto, payload);
+
+    return this.employeeService.getItem(dto);
   }
 
   @MessagePattern('update-employee')

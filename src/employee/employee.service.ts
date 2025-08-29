@@ -12,6 +12,12 @@ import {
   EmployeeEntity,
   EmployeeHasPositions,
   EmailEntity,
+  STATUS_EMPLOYEE,
+  BankEntity,
+  BondEntity,
+  PositionEntity,
+  StaffEntity,
+  BondHasStaff,
 } from 'cts-entities';
 
 import { CreateEmployeeDto, UpdateEmployeeDto } from './dto';
@@ -20,14 +26,16 @@ import { PositionService } from '../position/position.service';
 import { BankService } from '../bank/bank.service';
 
 import {
+  col,
   createResult,
   deleteResult,
   ErrorManager,
+  FilterRelationsDto,
   findOneByTerm,
   FindOneWhitTermAndRelationDto,
   IPaginationDto,
   msgError,
-  PaginationFilterStatusDto,
+  PaginationFilterStatusEmployeeDto,
   paginationResult,
   restoreResult,
   runInTransaction,
@@ -145,32 +153,158 @@ export class EmployeeService {
     }
   }
 
-  public async getItems(
-    pagination: PaginationFilterStatusDto<EmployeeEntity>,
-  ): Promise<IPaginationDto<EmployeeEntity>> {
+  public async getItems(pagination: FilterRelationsDto<EmployeeEntity>) {
     try {
-      const { relations, status, ..._pagination } = pagination;
-      const options: FindManyOptions<EmployeeEntity> = {};
+      const {
+        status = STATUS_EMPLOYEE.ACTIVE,
+        bank,
+        contract,
+        documents,
+        position,
+        staff,
+        bonds,
+        account,
+        //bond,
+        nacionality,
+        gener,
+        blood,
+        dismissal,
+        presence,
+        statusCivil,
+        vacation,
+        all = false,
+        limit = 10,
+        page = 1,
+      } = pagination;
+
+      const skip = page > 0 ? (page - 1) * limit : 0;
+
+      const employeeAlias = 'employee',
+        employeeHasPositionAlias = 'ehp',
+        positionAlias = 'position',
+        documentsAlias = 'documents',
+        salaryAlias = 'salary',
+        deparmentAlias = 'department',
+        typeContractAlias = 'typeContract',
+        bankAlias = 'bank',
+        emailAlias = 'email',
+        staffAlias = 'staff',
+        bondsHasStaffAlias = 'bondsHasStaff',
+        bondAlias = 'bond';
+
+      const employeesQuery =
+        this.employeeRepository.createQueryBuilder(employeeAlias);
+
+      if (position || staff || bonds) {
+        employeesQuery.leftJoinAndSelect(
+          `${col<EmployeeEntity>(employeeAlias, 'employeeHasPosition')}`,
+          employeeHasPositionAlias,
+        );
+
+        if (account) {
+          employeesQuery.leftJoinAndSelect(
+            `${col<EmployeeEntity>(employeeAlias, 'email_cts')}`,
+            emailAlias,
+          );
+        }
+
+        if (position)
+          employeesQuery
+            .leftJoinAndSelect(
+              `${col<EmployeeHasPositions>(employeeHasPositionAlias, 'position_id')}`,
+              positionAlias,
+            )
+            .leftJoinAndSelect(
+              `${col<PositionEntity>(positionAlias, 'salary')}`,
+              salaryAlias,
+            )
+            .leftJoinAndSelect(
+              `${col<PositionEntity>(positionAlias, 'department')}`,
+              deparmentAlias,
+            );
+
+        if (staff || bonds) {
+          employeesQuery.leftJoinAndSelect(
+            `${col<EmployeeHasPositions>(employeeHasPositionAlias, 'staff')}`,
+            staffAlias,
+          );
+
+          if (bonds) {
+            employeesQuery
+              .leftJoinAndSelect(
+                `${col<StaffEntity>(staffAlias, 'bondHasStaff')}`,
+                bondsHasStaffAlias,
+              )
+              .leftJoinAndSelect(
+                `${col<BondHasStaff>(bondsHasStaffAlias, 'bond')}`,
+                bondAlias,
+              );
+          }
+        }
+      }
+
+      if (documents) {
+        employeesQuery.leftJoinAndSelect(
+          `${col<EmployeeEntity>(employeeAlias, 'document')}`,
+          documentsAlias,
+        );
+      }
+
+      if (bank) {
+        employeesQuery.leftJoinAndSelect(
+          `${col<EmployeeEntity>(employeeAlias, 'bank')}`,
+          bankAlias,
+        );
+      }
+
+      if (contract) {
+        employeesQuery.leftJoinAndSelect(
+          `${col<EmployeeEntity>(employeeAlias, 'typeContract')}`,
+          typeContractAlias,
+        );
+      }
 
       if (status) {
-        options.where = { ...options.where, status: pagination.status };
-      }
-
-      if (relations) {
-        options.relations = {
-          employeeHasPosition: {
-            position_id: true,
-            staff: { headquarter: true },
+        employeesQuery.where(
+          `${col<EmployeeEntity>(employeeAlias, 'status')} = :status`,
+          {
+            status,
           },
-          bank: true,
-          email_cts: true,
-        };
+        );
       }
 
-      const result = await paginationResult(this.employeeRepository, {
-        ..._pagination,
-        options,
-      });
+      if (nacionality) {
+        employeesQuery.andWhere(
+          `${col<EmployeeEntity>(employeeAlias, 'nacionality')} = :nacionality`,
+          {
+            nacionality,
+          },
+        );
+      }
+
+      if (gener) {
+        employeesQuery.andWhere(
+          `${col<EmployeeEntity>(employeeAlias, 'gender')} = :gener`,
+          {
+            gener,
+          },
+        );
+      }
+
+      if (blood) {
+        employeesQuery.andWhere(
+          `${col<EmployeeEntity>(employeeAlias, 'blood_type')} = :blood`,
+          {
+            blood,
+          },
+        );
+      }
+
+      if (!all) {
+        employeesQuery.limit(limit).offset(skip);
+      }
+
+      const result = await employeesQuery.getMany();
 
       return result;
     } catch (error) {

@@ -1,8 +1,8 @@
 import { OmitType } from '@nestjs/mapped-types';
 import { IsBoolean, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { Type } from 'class-transformer';
+import { IFindOne } from 'cts-entities';
 
-import { IFindOne } from '../interfaces';
 import { ToBoolean } from '../decorators';
 
 export class FindOneWhitTermAndRelationDto implements IFindOne {
