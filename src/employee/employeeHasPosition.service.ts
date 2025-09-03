@@ -1,14 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { InjectRepository } from '@nestjs/typeorm';
-import {
-  FindOneOptions,
-  IsNull,
-  Not,
-  Or,
-  QueryRunner,
-  Repository,
-} from 'typeorm';
+import { FindOneOptions, QueryRunner, Repository } from 'typeorm';
 import {
   EmployeeEntity,
   EmployeeHasPositions,
@@ -43,7 +36,7 @@ export class EmployeeHasPositionService {
   ) {}
 
   async create(
-    employee: IEmployee,
+    employee: EmployeeEntity,
     position: IPosition[],
     queryRunner: QueryRunner,
   ) {

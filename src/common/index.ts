@@ -23,6 +23,7 @@ export * from './interfaces/position.interface';
 export * from './interfaces/salary.interface';
 export * from './interfaces/staff.interface';
 export * from './interfaces/typeContract.interface';
+export * from './interfaces/vacation.interface';
 export * from './transports/nats.module';
 export * from './utils/errorManager';
 export * from './utils/getMsgError';

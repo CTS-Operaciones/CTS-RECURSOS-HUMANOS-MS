@@ -8,3 +8,4 @@ export * from './position.interface';
 export * from './salary.interface';
 export * from './staff.interface';
 export * from './typeContract.interface';
+export * from './vacation.interface';

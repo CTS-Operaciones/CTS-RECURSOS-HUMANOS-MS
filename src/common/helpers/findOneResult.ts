@@ -19,11 +19,17 @@ export async function findOneByTerm<T extends ObjectLiteral>({
   searchField?: keyof T extends string ? keyof T : never;
   options?: FindOneOptions<T>;
 }): Promise<T> {
-  const { where = {}, relations = {}, select = {} } = options || {};
+  const {
+    where = {},
+    relations = {},
+    select = {},
+    withDeleted = false,
+  } = options || {};
   const optionsFindOne: FindOneOptions<T> = {
     where,
     relations,
     select,
+    withDeleted,
   };
 
   if (!isNaN(Number(term)) && searchField === undefined) {
