@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOneOptions, Repository } from 'typeorm';
+import { DataSource, FindOneOptions, Repository } from 'typeorm';
 import { VacationEntity } from 'cts-entities';
 
 import {
@@ -8,6 +8,7 @@ import {
   deleteResult,
   ErrorManager,
   findOneByTerm,
+  runInTransaction,
   updateResult,
 } from '../common';
 import { CreateVacationDto, UpdateVacationDto } from './dto';
@@ -97,8 +98,7 @@ export class VacationService {
 
   async remove(id: number) {
     try {
-      const vacation = await this.findOne(id);
-
+      await this.findOne(id);
       return await deleteResult(this.vacationRepository, id);
     } catch (error) {
       throw ErrorManager.createSignatureError(error);
