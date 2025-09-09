@@ -1,5 +1,6 @@
 import {
   IsBoolean,
+  IsDate,
   IsEnum,
   IsNumber,
   IsOptional,
@@ -145,4 +146,35 @@ export class FilterRelationsDto<T> extends FilterEnumsDto<T> {
   @Type(() => Boolean)
   @ToBoolean('vacation')
   vacation?: boolean = false;
-} 
+
+  @IsNumber()
+  @IsOptional()
+  @IsPositive()
+  department_id?: number;
+
+  @IsNumber()
+  @IsOptional()
+  @IsPositive()
+  position_id?: number;
+
+  @IsDate()
+  @IsOptional()
+  birthdayStart?: Date;
+
+  @IsDate()
+  @IsOptional()
+  birthdayEnd?: Date;
+
+  @IsDate()
+  @IsOptional()
+  registerStart?: Date;
+
+  @IsDate()
+  @IsOptional()
+  registerEnd?: Date;
+
+  @IsNumber()
+  @IsOptional()
+  @IsPositive()
+  project_id?: number;
+}

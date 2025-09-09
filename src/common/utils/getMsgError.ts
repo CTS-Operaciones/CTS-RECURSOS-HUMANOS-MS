@@ -40,6 +40,8 @@ export const msgError = (
 
     LENGTH_INCORRECT: `La longitud de ${value?.ids} con ${value?.find} es incorrecta`,
 
+    DATE_RANGE_INCORRECT: `las fechas ingresadas son incorrectas`,
+
     // Activar y desactivar
     ACTIVATE: 'No se logro activar el registro',
 
@@ -64,6 +66,7 @@ export declare enum ErrorCode {
   REGISTER_EXIST = 'REGISTER_EXIST',
   NO_WITH_TERM = 'NO_WITH_TERM',
   LENGTH_INCORRECT = 'LENGTH_INCORRECT',
+  DATE_RANGE_INCORRECT = 'DATE_RANGE_INCORRECT',
   UPDATE_NOT_FOUND = 'UPDATE_NOT_FOUND',
   DELETE_NOT_FOUND = 'DELETE_NOT_FOUND',
   REGISTER_NOT_DELETE_ALLOWED = 'REGISTER_NOT_DELETE_ALLOWED',

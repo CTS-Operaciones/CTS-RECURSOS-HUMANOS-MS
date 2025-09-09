@@ -13,8 +13,10 @@ import {
   EmailEntity,
   STATUS_EMPLOYEE,
   PositionEntity,
+  BondHasEmployee,
   StaffEntity,
-  BondHasStaff,
+  Headquarters,
+  Project,
 } from 'cts-entities';
 
 import { CreateEmployeeDto, UpdateEmployeeDto } from './dto';
@@ -161,7 +163,6 @@ export class EmployeeService {
         staff,
         bonds,
         account,
-        //bond,
         nacionality,
         gener,
         blood,
@@ -169,6 +170,13 @@ export class EmployeeService {
         dismissal,
         presence,
         vacation,
+        department_id = undefined,
+        position_id = undefined,
+        birthdayStart = undefined,
+        birthdayEnd = undefined,
+        registerStart = undefined,
+        registerEnd = undefined,
+        project_id = undefined,
         relations = false,
         all = false,
         limit = 10,
@@ -187,139 +195,192 @@ export class EmployeeService {
         bankAlias = 'bank',
         emailAlias = 'email',
         staffAlias = 'staff',
+        headquartersAlias = 'headquarter',
+        projectAlias = 'project',
         bondsHasStaffAlias = 'bondsHasStaff',
         bondAlias = 'bond',
-        dismissalAlias = 'dismissal';
+        dismissalAlias = 'dismissal',
+        vacationAlias = 'vacation';
 
       const employeesQuery =
         this.employeeRepository.createQueryBuilder(employeeAlias);
 
-      if (relations || position || staff || bonds) {
-        employeesQuery.leftJoinAndSelect(
-          `${col<EmployeeEntity>(employeeAlias, 'employeeHasPosition')}`,
-          employeeHasPositionAlias,
-        );
+      const joinAll = relations === true;
 
-        if (relations || account) {
-          employeesQuery.leftJoinAndSelect(
-            `${col<EmployeeEntity>(employeeAlias, 'email_cts')}`,
-            emailAlias,
+      const joins = [
+        {
+          flag: joinAll || position || staff || bonds,
+          path: col<EmployeeEntity>(employeeAlias, 'employeeHasPosition'),
+          alias: employeeHasPositionAlias,
+        },
+        {
+          flag: joinAll || account,
+          path: col<EmployeeEntity>(employeeAlias, 'email_cts'),
+          alias: emailAlias,
+        },
+        {
+          flag: joinAll || position,
+          path: col<EmployeeHasPositions>(
+            employeeHasPositionAlias,
+            'position_id',
+          ),
+          alias: positionAlias,
+        },
+        {
+          flag: joinAll || position,
+          path: col<PositionEntity>(positionAlias, 'salary'),
+          alias: salaryAlias,
+        },
+        {
+          flag: joinAll || position,
+          path: col<PositionEntity>(positionAlias, 'department'),
+          alias: deparmentAlias,
+        },
+        {
+          flag: joinAll || bonds,
+          path: col<EmployeeEntity>(emailAlias, 'bondHasEmployee'),
+          alias: bondsHasStaffAlias,
+        },
+        {
+          flag: joinAll || dismissal,
+          path: col<EmployeeEntity>(employeeAlias, 'dismissals'),
+          alias: dismissalAlias,
+        },
+        {
+          flag: joinAll || vacation,
+          path: col<EmployeeEntity>(employeeAlias, 'vacations'),
+          alias: vacationAlias,
+        },
+        {
+          flag: joinAll || bonds,
+          path: col<BondHasEmployee>(bondsHasStaffAlias, 'bond'),
+          alias: bondAlias,
+        },
+        {
+          flag: joinAll || staff || project_id || bonds || presence,
+          path: col<EmployeeHasPositions>(employeeHasPositionAlias, 'staff'),
+          alias: staffAlias,
+        },
+        {
+          flag: joinAll || project_id,
+          path: col<StaffEntity>(staffAlias, 'headquarter'),
+          alias: headquartersAlias,
+        },
+        {
+          flag: joinAll || project_id,
+          path: col<Headquarters>(headquartersAlias, 'project'),
+          alias: projectAlias,
+        },
+        {
+          flag: joinAll || documents,
+          path: col<EmployeeEntity>(employeeAlias, 'document'),
+          alias: documentsAlias,
+        },
+        {
+          flag: joinAll || bank,
+          path: col<EmployeeEntity>(employeeAlias, 'bank'),
+          alias: bankAlias,
+        },
+        {
+          flag: joinAll || contract,
+          path: col<EmployeeEntity>(employeeAlias, 'typeContract'),
+          alias: typeContractAlias,
+        },
+      ];
+
+      for (const { flag, path, alias } of joins) {
+        if (flag) employeesQuery.leftJoinAndSelect(path, alias);
+      }
+
+      const filters: Record<string, any> = {
+        status,
+        nacionality,
+        gener,
+        blood,
+        statusCivil,
+      };
+
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value) {
+          employeesQuery.andWhere(
+            `${col<EmployeeEntity>(employeeAlias, key as keyof EmployeeEntity)} = :${key}`,
+            { [key]: value },
           );
         }
+      });
 
-        if (relations || position)
-          employeesQuery
-            .leftJoinAndSelect(
-              `${col<EmployeeHasPositions>(employeeHasPositionAlias, 'position_id')}`,
-              positionAlias,
-            )
-            .leftJoinAndSelect(
-              `${col<PositionEntity>(positionAlias, 'salary')}`,
-              salaryAlias,
-            )
-            .leftJoinAndSelect(
-              `${col<PositionEntity>(positionAlias, 'department')}`,
-              deparmentAlias,
-            );
+      if (department_id && department_id > 0) {
+        employeesQuery.andWhere(
+          `${col<PositionEntity>(positionAlias, 'department')} = :department_id`,
+          {
+            department_id,
+          },
+        );
+      }
 
-        if (relations || staff || bonds || dismissal || presence || vacation) {
-          employeesQuery.leftJoinAndSelect(
-            `${col<EmployeeHasPositions>(employeeHasPositionAlias, 'staff')}`,
-            staffAlias,
-          );
+      if (position_id && position_id > 0) {
+        employeesQuery.andWhere(
+          `${col<PositionEntity>(positionAlias, 'id')} = :position_id`,
+          {
+            position_id,
+          },
+        );
+      }
 
-          if (relations || bonds) {
-            employeesQuery
-              .leftJoinAndSelect(
-                `${col<StaffEntity>(staffAlias, 'bondHasStaff')}`,
-                bondsHasStaffAlias,
-              )
-              .leftJoinAndSelect(
-                `${col<BondHasStaff>(bondsHasStaffAlias, 'bond')}`,
-                bondAlias,
-              );
-          }
-
-          if (relations || dismissal) {
-            employeesQuery.leftJoinAndSelect(
-              `${col<StaffEntity>(staffAlias, 'dismissals')}`,
-              dismissalAlias,
-            );
-          }
+      if (birthdayStart && birthdayEnd) {
+        if (birthdayStart > birthdayEnd) {
+          throw new ErrorManager({
+            code: 'NOT_ACCEPTABLE',
+            message: msgError('DATE_RANGE_INCORRECT'),
+          });
         }
-      }
 
-      if (relations || documents) {
-        employeesQuery.leftJoinAndSelect(
-          `${col<EmployeeEntity>(employeeAlias, 'document')}`,
-          documentsAlias,
-        );
-      }
-
-      if (relations || bank) {
-        employeesQuery.leftJoinAndSelect(
-          `${col<EmployeeEntity>(employeeAlias, 'bank')}`,
-          bankAlias,
-        );
-      }
-
-      if (relations || contract) {
-        employeesQuery.leftJoinAndSelect(
-          `${col<EmployeeEntity>(employeeAlias, 'typeContract')}`,
-          typeContractAlias,
-        );
-      }
-
-      if (status) {
-        employeesQuery.where(
-          `${col<EmployeeEntity>(employeeAlias, 'status')} = :status`,
-          {
-            status,
-          },
-        );
-      }
-
-      if (nacionality) {
         employeesQuery.andWhere(
-          `${col<EmployeeEntity>(employeeAlias, 'nacionality')} = :nacionality`,
+          `${col<EmployeeEntity>(employeeAlias, 'date_birth')} BETWEEN :birthdayStart AND :birthdayEnd`,
           {
-            nacionality,
+            birthdayStart,
+            birthdayEnd,
           },
         );
       }
 
-      if (gener) {
+      if (registerStart && registerEnd) {
+        if (registerStart > registerEnd) {
+          throw new ErrorManager({
+            code: 'NOT_ACCEPTABLE',
+            message: msgError('DATE_RANGE_INCORRECT'),
+          });
+        }
+
         employeesQuery.andWhere(
-          `${col<EmployeeEntity>(employeeAlias, 'gender')} = :gener`,
+          `${col<EmployeeEntity>(employeeAlias, 'date_register')} BETWEEN :registerStart AND :registerEnd`,
           {
-            gener,
+            registerStart,
+            registerEnd,
           },
         );
       }
 
-      if (blood) {
+      if (project_id) {
         employeesQuery.andWhere(
-          `${col<EmployeeEntity>(employeeAlias, 'blood_type')} = :blood`,
+          `${col<Project>(projectAlias, 'id')} = :project_id`,
           {
-            blood,
+            project_id,
           },
         );
       }
 
-      if (statusCivil) {
-        employeesQuery.andWhere(
-          `${col<EmployeeEntity>(employeeAlias, 'status_civil')} = :statusCivil`,
-          {
-            statusCivil,
-          },
-        );
-      }
+      if (!all) employeesQuery.skip(skip).take(limit);
 
-      if (!all) {
-        employeesQuery.limit(limit).offset(skip);
-      }
+      let result: EmployeeEntity[];
+      let totalResult: number;
 
-      const [result, totalResult] = await employeesQuery.getManyAndCount();
+      if (all) {
+        result = await employeesQuery.getMany();
+        totalResult = result.length;
+      } else {
+        [result, totalResult] = await employeesQuery.getManyAndCount();
+      }
 
       const totalPages = all ? 1 : Math.ceil(totalResult / limit);
 
@@ -352,6 +413,9 @@ export class EmployeeService {
           },
           typeContract: true,
           email_cts: true,
+          dismissals: true,
+          vacations: true,
+          bondHasEmployee: true,
         };
       }
 
@@ -360,13 +424,15 @@ export class EmployeeService {
           ...options.relations,
           employeeHasPosition: {
             position_id: true,
-            staff: { bondHasStaff: true, headquarter: true },
+            staff: { headquarter: true },
           },
         };
       }
 
       if (deletes) {
         options.withDeleted = true;
+      } else {
+        options.where = { status: STATUS_EMPLOYEE.ACTIVE };
       }
 
       const result = await findOneByTerm({
