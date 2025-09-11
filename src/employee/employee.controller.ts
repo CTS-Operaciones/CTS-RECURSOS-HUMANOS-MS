@@ -55,7 +55,6 @@ export class AsignedPositionsController {
     private readonly employeeHasPostionService: EmployeeHasPositionService,
   ) {}
 
-  // FIXME: #5 Validar Tipado del payload
   @MessagePattern('asignedPositionsFindByEmployeeId')
   findPositionsById(
     @Payload()

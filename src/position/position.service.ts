@@ -31,7 +31,6 @@ import {
   restoreResult,
   runInTransaction,
 } from '../common';
-import { IsMilitaryTime } from 'class-validator';
 
 @Injectable()
 export class PositionService {
@@ -48,37 +47,40 @@ export class PositionService {
 
   async create(createPositionDto: CreatePositionDto) {
     try {
-      return runInTransaction(this.dataSource, async (queryRunner) => {
+      const {
+        salary,
+        department_id,
+        parent = undefined,
+        ...payload
+      } = createPositionDto;
+      const { salary_in_words, amount } = salary;
+
+      if (parent) {
         const {
-          salary,
-          department_id,
-          parent = undefined,
-          ...payload
-        } = createPositionDto;
-        const { salary_in_words, amount } = salary;
+          salary: _,
+          department,
+          ...boos
+        } = await this.findOne({
+          term: parent,
+          relations: true,
+        });
 
-        if (parent) {
-          const {
-            salary: _,
-            department,
-            ...boos
-          } = await this.findOne({
-            term: parent,
-            relations: true,
-          });
+        payload['parent'] = { id: boos.id };
+        payload['department'] = department;
+      } else if (department_id) {
+        const department = await this.departmentService.findOneByTerm({
+          term: department_id,
+        });
 
-          payload['parent'] = { id: boos.id };
-          payload['department'] = department;
-        } else if (department_id) {
-          const department = await this.departmentService.findOneByTerm({
-            term: department_id,
-          });
+        payload['department'] = department;
+      } else {
+        throw new ErrorManager({
+          code: 'NOT_FOUND',
+          message: msgError('NO_GET_PARAM'),
+        });
+      }
 
-          payload['department'] = department;
-        } else {
-          throw new ErrorManager(msgError('NO_GET_PARAM'));
-        }
-
+      return runInTransaction(this.dataSource, async (queryRunner) => {
         const salaryCrated = await this.findOrCreateSalary(queryRunner, {
           amount,
           salary_in_words,
@@ -340,7 +342,7 @@ export class PositionService {
           message: msgError('REGISTER_NOT_DELETE_ALLOWED', id),
         });
       }
-      
+
       const result = await deleteResult(this.positionRepository, id);
 
       return result;
