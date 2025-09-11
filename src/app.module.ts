@@ -10,12 +10,9 @@ import { DocumentModule } from './document/document.module';
 import { PositionModule } from './position/position.module';
 import { HolidayModule } from './holiday/holiday.module';
 import { VacationModule } from './vacation/vacation.module';
-<<<<<<< HEAD
 import { AttendancePermissionModule } from './attendance-permission/attendance-permission.module';
-=======
 import { DismissalsModule } from './dismissals/dismissals.module';
 import { BondsModule } from './bonds/bonds.module';
->>>>>>> 138053fa8ba73633ad55fd7f44b7c6befb7ff733
 
 @Module({
   imports: [

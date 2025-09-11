@@ -13,14 +13,10 @@ import {
   EmailEntity,
   STATUS_EMPLOYEE,
   PositionEntity,
-  BondHasEmployee,
   StaffEntity,
-<<<<<<< HEAD
   BondHasEmployee,
-=======
   Headquarters,
   Project,
->>>>>>> 138053fa8ba73633ad55fd7f44b7c6befb7ff733
 } from 'cts-entities';
 
 import { CreateEmployeeDto, UpdateEmployeeDto } from './dto';
@@ -331,29 +327,27 @@ export class EmployeeService {
         );
       }
 
-<<<<<<< HEAD
-          if (relations || bonds) {
-            employeesQuery
-              .leftJoinAndSelect(
-                `${col<EmployeeEntity>(employeeAlias, 'bondHasEmployee')}`,
-                bondsHasStaffAlias,
-              )
-              .leftJoinAndSelect(
-                `${col<BondHasEmployee>(bondsHasStaffAlias, 'bond')}`,
-                bondAlias,
-              );
-          }
-=======
+      if (relations || bonds) {
+        employeesQuery
+          .leftJoinAndSelect(
+            `${col<EmployeeEntity>(employeeAlias, 'bondHasEmployee')}`,
+            bondsHasStaffAlias,
+          )
+          .leftJoinAndSelect(
+            `${col<BondHasEmployee>(bondsHasStaffAlias, 'bond')}`,
+            bondAlias,
+          );
+      }
+
       if (birthdayStart && birthdayEnd) {
         if (birthdayStart > birthdayEnd) {
           throw new ErrorManager({
             code: 'NOT_ACCEPTABLE',
             message: msgError('DATE_RANGE_INCORRECT'),
           });
->>>>>>> 138053fa8ba73633ad55fd7f44b7c6befb7ff733
         }
+      }
 
-<<<<<<< HEAD
       if (relations || dismissal) {
         employeesQuery.leftJoinAndSelect(
           `${col<EmployeeEntity>(employeeAlias, 'dismissals')}`,
@@ -392,8 +386,6 @@ export class EmployeeService {
       }
 
       if (nacionality) {
-=======
->>>>>>> 138053fa8ba73633ad55fd7f44b7c6befb7ff733
         employeesQuery.andWhere(
           `${col<EmployeeEntity>(employeeAlias, 'date_birth')} BETWEEN :birthdayStart AND :birthdayEnd`,
           {
@@ -484,15 +476,12 @@ export class EmployeeService {
           employeeHasPosition: {
             position_id: true,
             staff: { headquarter: true },
-<<<<<<< HEAD
           },
           bondHasEmployee: {
             bond: {
               type_id: true,
               description_id: true,
             },
-=======
->>>>>>> 138053fa8ba73633ad55fd7f44b7c6befb7ff733
           },
         };
       }
