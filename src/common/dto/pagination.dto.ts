@@ -147,6 +147,12 @@ export class FilterRelationsDto<T> extends FilterEnumsDto<T> {
   @ToBoolean('vacation')
   vacation?: boolean = false;
 
+  @IsBoolean()
+  @IsOptional()
+  @Type(() => Boolean)
+  @ToBoolean('permission')
+  permission: boolean = false;
+
   @IsNumber()
   @IsOptional()
   @IsPositive()

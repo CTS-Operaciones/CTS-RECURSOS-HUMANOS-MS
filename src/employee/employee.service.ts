@@ -17,6 +17,7 @@ import {
   BondHasEmployee,
   Headquarters,
   Project,
+  AttendancePermission,
 } from 'cts-entities';
 
 import { CreateEmployeeDto, UpdateEmployeeDto } from './dto';
@@ -169,6 +170,7 @@ export class EmployeeService {
         statusCivil,
         dismissal,
         presence,
+        permission,
         vacation,
         department_id = undefined,
         position_id = undefined,
@@ -200,7 +202,9 @@ export class EmployeeService {
         bondsHasStaffAlias = 'bondsHasStaff',
         bondAlias = 'bond',
         dismissalAlias = 'dismissal',
-        vacationAlias = 'vacation';
+        vacationAlias = 'vacation',
+        attendancePermissionsAlias = 'attendancePermissionsAlias',
+        permissionAlias = 'permission';
 
       const employeesQuery =
         this.employeeRepository.createQueryBuilder(employeeAlias);
@@ -352,6 +356,20 @@ export class EmployeeService {
         employeesQuery.leftJoinAndSelect(
           `${col<EmployeeEntity>(employeeAlias, 'dismissals')}`,
           dismissalAlias,
+        );
+      }
+
+      if (relations || vacation) {
+        employeesQuery.leftJoinAndSelect(
+          `${col<EmployeeEntity>(employeeAlias, 'vacations')}`,
+          vacationAlias,
+        );
+      }
+
+      if (relations || permission) {
+        employeesQuery.leftJoinAndSelect(
+          `${col<EmployeeEntity>(employeeAlias, 'attendancePermissions')}`,
+          attendancePermissionsAlias,
         );
       }
 
