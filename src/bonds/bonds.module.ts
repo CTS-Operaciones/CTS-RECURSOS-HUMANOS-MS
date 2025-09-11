@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import {
   BondEntity,
-  BondHasStaff,
+  BondHasEmployee,
   DescriptionBondEntity,
   TypesBondEntity,
 } from 'cts-entities';
@@ -17,7 +17,7 @@ const entities = TypeOrmModule.forFeature([
   BondEntity,
   TypesBondEntity,
   DescriptionBondEntity,
-  BondHasStaff,
+  BondHasEmployee,
 ]);
 
 const services = [EmployeeModule];

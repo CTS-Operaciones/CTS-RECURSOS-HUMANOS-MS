@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindManyOptions, FindOneOptions, Repository } from 'typeorm';
-import { BondEntity, BondHasStaff } from 'cts-entities';
+import { BondEntity, BondHasEmployee } from 'cts-entities';
 
 import { CreateBondDto, UpdateBondDto } from './dto';
 
@@ -22,8 +22,8 @@ import { EmployeeService } from '../employee/employee.service';
 @Injectable()
 export class BondsService {
   constructor(
-    @InjectRepository(BondHasStaff)
-    private readonly bondHasStaffRepository: Repository<BondHasStaff>,
+    @InjectRepository(BondHasEmployee)
+    private readonly bondHasEmployeeRepository: Repository<BondHasEmployee>,
     @InjectRepository(BondEntity)
     private readonly bondRepository: Repository<BondEntity>,
     private readonly typesBondService: TypesBondService,
@@ -51,7 +51,7 @@ export class BondsService {
       });
 
       const result = await createResult(
-        this.bondHasStaffRepository,
+        this.bondHasEmployeeRepository,
         {
           employee,
           date_assigned,
@@ -62,7 +62,7 @@ export class BondsService {
             type_id: type_bonds,
           },
         },
-        BondHasStaff,
+        BondHasEmployee,
       );
 
       return result;
@@ -80,7 +80,7 @@ export class BondsService {
         options.relations = {
           description_id: true,
           type_id: true,
-          bondHasStaff: {
+          bondHasEmployee: {
             employee: true,
           },
         };
@@ -103,7 +103,7 @@ export class BondsService {
         relations: {
           description_id: true,
           type_id: true,
-          bondHasStaff: {
+          bondHasEmployee: {
             employee: true,
           },
         },
