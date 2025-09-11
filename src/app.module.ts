@@ -10,6 +10,7 @@ import { DocumentModule } from './document/document.module';
 import { PositionModule } from './position/position.module';
 import { HolidayModule } from './holiday/holiday.module';
 import { VacationModule } from './vacation/vacation.module';
+import { AttendancePermissionModule } from './attendance-permission/attendance-permission.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { VacationModule } from './vacation/vacation.module';
     PositionModule,
     HolidayModule,
     VacationModule,
+    AttendancePermissionModule,
   ],
 })
 export class AppModule {}

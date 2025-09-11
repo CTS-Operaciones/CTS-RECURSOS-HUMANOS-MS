@@ -14,7 +14,7 @@ import {
   STATUS_EMPLOYEE,
   PositionEntity,
   StaffEntity,
-  BondHasStaff,
+  BondHasEmployee,
 } from 'cts-entities';
 
 import { CreateEmployeeDto, UpdateEmployeeDto } from './dto';
@@ -231,22 +231,22 @@ export class EmployeeService {
           if (relations || bonds) {
             employeesQuery
               .leftJoinAndSelect(
-                `${col<StaffEntity>(staffAlias, 'bondHasStaff')}`,
+                `${col<EmployeeEntity>(employeeAlias, 'bondHasEmployee')}`,
                 bondsHasStaffAlias,
               )
               .leftJoinAndSelect(
-                `${col<BondHasStaff>(bondsHasStaffAlias, 'bond')}`,
+                `${col<BondHasEmployee>(bondsHasStaffAlias, 'bond')}`,
                 bondAlias,
               );
           }
-
-          if (relations || dismissal) {
-            employeesQuery.leftJoinAndSelect(
-              `${col<StaffEntity>(staffAlias, 'dismissals')}`,
-              dismissalAlias,
-            );
-          }
         }
+      }
+
+      if (relations || dismissal) {
+        employeesQuery.leftJoinAndSelect(
+          `${col<EmployeeEntity>(employeeAlias, 'dismissals')}`,
+          dismissalAlias,
+        );
       }
 
       if (relations || documents) {
@@ -360,7 +360,13 @@ export class EmployeeService {
           ...options.relations,
           employeeHasPosition: {
             position_id: true,
-            staff: { bondHasStaff: true, headquarter: true },
+            staff: { headquarter: true },
+          },
+          bondHasEmployee: {
+            bond: {
+              type_id: true,
+              description_id: true,
+            },
           },
         };
       }
