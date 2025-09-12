@@ -32,6 +32,7 @@ import {
   ErrorManager,
   FilterRelationsDto,
   findOneByTerm,
+  FindOneDto,
   FindOneWhitTermAndRelationDto,
   IPaginationResult,
   msgError,
@@ -156,6 +157,7 @@ export class EmployeeService {
   ): Promise<IPaginationResult<EmployeeEntity>> {
     try {
       const {
+        name = undefined,
         status = STATUS_EMPLOYEE.ACTIVE,
         bank,
         contract,
@@ -440,6 +442,28 @@ export class EmployeeService {
       }
 
       if (!all) employeesQuery.skip(skip).take(limit);
+
+      if (name && name !== '') {
+        employeesQuery
+          .andWhere(
+            `LOWER(${col<EmployeeEntity>(employeeAlias, 'names')}) LIKE LOWER('%${name}%')`,
+            {
+              name,
+            },
+          )
+          .orWhere(
+            `LOWER(${col<EmployeeEntity>(employeeAlias, 'first_last_name')}) LIKE LOWER('%${name}%')`,
+            {
+              name,
+            },
+          )
+          .orWhere(
+            `LOWER(${col<EmployeeEntity>(employeeAlias, 'second_last_name')}) LIKE LOWER('%${name}%')`,
+            {
+              name,
+            },
+          );
+      }
 
       let result: EmployeeEntity[];
       let totalResult: number;

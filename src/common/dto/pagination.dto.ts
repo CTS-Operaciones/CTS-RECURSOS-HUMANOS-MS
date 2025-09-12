@@ -5,6 +5,7 @@ import {
   IsNumber,
   IsOptional,
   IsPositive,
+  IsString,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -82,6 +83,10 @@ export class FilterEnumsDto<T> extends PaginationFilterStatusEmployeeDto<T> {
 }
 
 export class FilterRelationsDto<T> extends FilterEnumsDto<T> {
+  @IsString()
+  @IsOptional()
+  name: string | undefined = undefined;
+
   @IsBoolean()
   @IsOptional()
   @Type(() => Boolean)
