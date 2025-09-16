@@ -41,7 +41,7 @@ export class VacationService {
       const result = await createResult(
         this.vacationRepository,
         {
-          employee: _employee,
+          employmentRecord: { employee: _employee },
           endDate,
           startDate,
           requested_day,
@@ -64,7 +64,7 @@ export class VacationService {
 
       if (relations) {
         options.relations = {
-          employee: true,
+          employmentRecord: { employee: true },
         };
       }
 

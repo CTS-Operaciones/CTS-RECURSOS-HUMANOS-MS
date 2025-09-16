@@ -3,9 +3,8 @@ import { ClientProxy } from '@nestjs/microservices';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOneOptions, QueryRunner, Repository } from 'typeorm';
 import {
-  EmployeeEntity,
   EmployeeHasPositions,
-  IEmployee,
+  EmploymentRecordEntity,
   StaffEntity,
 } from 'cts-entities';
 
@@ -26,6 +25,7 @@ import {
 } from '../common';
 
 import { PositionService } from '../position/position.service';
+import { EmploymentRecordDto } from './dto';
 
 @Injectable()
 export class EmployeeHasPositionService {
@@ -36,7 +36,7 @@ export class EmployeeHasPositionService {
   ) {}
 
   async create(
-    employee: EmployeeEntity,
+    employee: EmploymentRecordEntity,
     position: IPosition[],
     queryRunner: QueryRunner,
   ) {
@@ -46,7 +46,7 @@ export class EmployeeHasPositionService {
           return await createResult(
             this.employeeHasPostion,
             {
-              employee_id: employee,
+              employmentRecord: employee,
               position_id: el,
             },
             EmployeeHasPositions,
@@ -76,8 +76,12 @@ export class EmployeeHasPositionService {
       }
 
       const options: FindOneOptions<EmployeeHasPositions> = {
-        where: { employee_id: { id: +term } },
-        relations: { employee_id: true },
+        where: { employmentRecord: { id: +term } },
+        relations: {
+          employmentRecord: {
+            employee: true,
+          },
+        },
       };
 
       if (relations || allRelations) {
@@ -125,7 +129,7 @@ export class EmployeeHasPositionService {
       return {
         ...result,
         data: {
-          employee_id: result.data[0].employee_id.id,
+          employee_id: result.data[0].employmentRecord.employee.id,
           position_id: data,
         },
       };
@@ -140,7 +144,9 @@ export class EmployeeHasPositionService {
 
       if (relations) {
         options.relations = {
-          employee_id: true,
+          employmentRecord: {
+            employee: true,
+          },
           position_id: true,
         };
       }
@@ -161,7 +167,7 @@ export class EmployeeHasPositionService {
   async findHistryByEmployeeId(id: number) {
     try {
       return await this.employeeHasPostion.find({
-        where: { employee_id: { id } },
+        where: { employmentRecord: { employee: { id } } },
         withDeleted: true,
         relations: { position_id: true },
       });
@@ -179,12 +185,13 @@ export class EmployeeHasPositionService {
   }: {
     queryRunner: QueryRunner;
     position_id: number[];
-    employee: EmployeeEntity;
+    employee: EmploymentRecordEntity;
     positionService: PositionService;
   }) {
     try {
       const employeeHasPositionAlias = 'ehp',
         employeeAlias = 'employee',
+        employmentRecordAlias = 'employmentRecord',
         positionAlias = 'position',
         staffAlias = 'staff',
         headquarterAlias = 'headquarter';
@@ -198,8 +205,8 @@ export class EmployeeHasPositionService {
           `${col<EmployeeHasPositions>(employeeHasPositionAlias, 'deleted_at')}`,
         )
         .leftJoinAndSelect(
-          `${col<EmployeeHasPositions>(employeeHasPositionAlias, 'employee_id')}`,
-          employeeAlias,
+          `${col<EmployeeHasPositions>(employeeHasPositionAlias, 'employmentRecord')}`,
+          employmentRecordAlias,
         )
         .leftJoinAndSelect(
           `${col<EmployeeHasPositions>(employeeHasPositionAlias, 'position_id')}`,
@@ -214,7 +221,7 @@ export class EmployeeHasPositionService {
           headquarterAlias,
         )
         .where(
-          `${col<EmployeeHasPositions>(employeeHasPositionAlias, 'employee_id')} = :id`,
+          `${col<EmploymentRecordEntity>(employmentRecordAlias, 'employee')} = :id`,
           { id: employee.id },
         )
         .withDeleted()
@@ -266,7 +273,7 @@ export class EmployeeHasPositionService {
             result = await createResult(
               this.employeeHasPostion,
               {
-                employee_id: employee,
+                employmentRecord: employee,
                 position_id: newPosition,
               },
               EmployeeHasPositions,

@@ -42,6 +42,19 @@ export const msgError = (
 
     DATE_RANGE_INCORRECT: `las fechas ingresadas son incorrectas`,
 
+    // Validación de employees in headquarter
+    MAX_EMPLOYEES: 'La sede alcanzo el maximo de empleados requeridos',
+
+    EXIST_MAX_EMPLOYEES: `Esta a ${value?.N} de alcanzar el maximo de empleados (${value?.M}) en la sede`,
+
+    NO_EXIST_POSITION: `No existe la posicion ${value} en la sede`,
+
+    PARENT_REQUIRED: `El campo parent es requerido`,
+
+    NOT_REQUIRED_BOSS: `No requiere un jefe directo`,
+
+    PARENT_NOT_VALID: `El campo parent no es valido para el registro (se encontraron: ${value})`,
+
     // Activar y desactivar
     ACTIVATE: 'No se logro activar el registro',
 
@@ -70,6 +83,12 @@ export declare enum ErrorCode {
   UPDATE_NOT_FOUND = 'UPDATE_NOT_FOUND',
   DELETE_NOT_FOUND = 'DELETE_NOT_FOUND',
   REGISTER_NOT_DELETE_ALLOWED = 'REGISTER_NOT_DELETE_ALLOWED',
+  MAX_EMPLOYEES = 'MAX_EMPLOYEES',
+  EXIST_MAX_EMPLOYEES = 'EXIST_MAX_EMPLOYEES',
+  NO_EXIST_POSITION = 'NO_EXIST_POSITION',
+  PARENT_REQUIRED = 'PARENT_REQUIRED',
+  NOT_REQUIRED_BOSS = 'NOT_REQUIRED_BOSS',
+  PARENT_NOT_VALID = 'PARENT_NOT_VALID',
   ACTIVATE = 'ACTIVATE',
   DEACTIVATE = 'DEACTIVATE',
 }

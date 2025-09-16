@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindManyOptions, FindOneOptions, Repository } from 'typeorm';
-import { DismissalEntity, EmployeeEntity } from 'cts-entities';
+import { EmploymentRecordEntity, EmployeeEntity } from 'cts-entities';
 
 import { CreateDismissalDto, UpdateDismissalDto } from './dto';
 import {
@@ -16,10 +16,11 @@ import { EmployeeService } from '../employee/employee.service';
 @Injectable()
 export class DismissalsService {
   constructor(
-    @InjectRepository(DismissalEntity)
-    private readonly dismissalsRepository: Repository<DismissalEntity>,
+    @InjectRepository(EmploymentRecordEntity)
+    private readonly employmentRecordRepository: Repository<EmploymentRecordEntity>,
     private readonly employeeService: EmployeeService,
   ) {}
+
   async create(createDismissalDto: CreateDismissalDto) {
     try {
       const {
@@ -29,14 +30,21 @@ export class DismissalsService {
         comment = '',
       } = createDismissalDto;
 
-      const employee = await this.employeeService.getItem({
-        term: employee_id,
+      const { employmentRecord, ...employee } =
+        await this.employeeService.getItem({
+          term: employee_id,
+          relations: true,
+        });
+
+      Object.assign(employmentRecord, {
+        reason,
+        date_end: date,
       });
 
       const result = await createResult(
-        this.dismissalsRepository,
-        { reason, date, comment, employee },
-        DismissalEntity,
+        this.employmentRecordRepository,
+        { ...employmentRecord[0], reason, date_end: date, comment },
+        EmploymentRecordEntity,
       );
 
       return result;
@@ -49,7 +57,7 @@ export class DismissalsService {
     try {
       const { relations, ...pagination } = paginationDto;
 
-      const options: FindManyOptions<DismissalEntity> = {};
+      const options: FindManyOptions<EmploymentRecordEntity> = {};
 
       if (relations) {
         options.relations = {
@@ -57,7 +65,7 @@ export class DismissalsService {
         };
       }
 
-      const result = paginationResult(this.dismissalsRepository, {
+      const result = paginationResult(this.employmentRecordRepository, {
         ...pagination,
         options,
       });
@@ -70,7 +78,7 @@ export class DismissalsService {
 
   async findOne(id: number, relations: boolean = false) {
     try {
-      const options: FindOneOptions<DismissalEntity> = {};
+      const options: FindOneOptions<EmploymentRecordEntity> = {};
 
       if (relations) {
         options.relations = {
@@ -79,7 +87,7 @@ export class DismissalsService {
       }
 
       const result = await findOneByTerm({
-        repository: this.dismissalsRepository,
+        repository: this.employmentRecordRepository,
         term: id,
         options,
       });
@@ -103,9 +111,9 @@ export class DismissalsService {
       }
 
       const result = await createResult(
-        this.dismissalsRepository,
-        { ...dismissal, reason, date, comment },
-        DismissalEntity,
+        this.employmentRecordRepository,
+        { ...dismissal, reason, date_end: date, comment },
+        EmploymentRecordEntity,
       );
 
       return result;
@@ -116,7 +124,7 @@ export class DismissalsService {
 
   async remove(id: number) {
     try {
-      return await this.dismissalsRepository.delete(id);
+      return await this.employmentRecordRepository.delete(id);
     } catch (error) {
       throw ErrorManager.createSignatureError(error);
     }

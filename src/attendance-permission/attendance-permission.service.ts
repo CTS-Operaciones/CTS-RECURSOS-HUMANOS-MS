@@ -65,7 +65,7 @@ export class AttendancePermissionService {
 
       if (relations) {
         options.relations = {
-          employee_id: true,
+          employees: true,
         };
       }
 
@@ -86,7 +86,7 @@ export class AttendancePermissionService {
 
       if (relations) {
         options.relations = {
-          employee_id: true,
+          employees: true,
         };
       }
 

@@ -126,17 +126,6 @@ export class FilterRelationsDto<T> extends FilterEnumsDto<T> {
   @IsBoolean()
   @IsOptional()
   @Type(() => Boolean)
-  @ToBoolean('dismissal')
-  dismissal?: boolean = false;
-
-  // @IsNumber()
-  // @IsPositive()
-  // @IsOptional()
-  // bond?: number = 0;
-
-  @IsBoolean()
-  @IsOptional()
-  @Type(() => Boolean)
   @ToBoolean('bonds')
   bonds?: boolean = false;
 
