@@ -77,7 +77,6 @@ export class EmployeeHasPositionDto implements IEmployeeHasPosition {
   @IsOptional()
   @IsNumber()
   @IsPositive()
-  @Min(1)
   parent_id?: number;
 }
 

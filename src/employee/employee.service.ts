@@ -19,10 +19,8 @@ import {
   Headquarters,
   Project,
   EmploymentRecordEntity,
-  RespondeFindOneForClient,
   findMaxAndRegistered,
   BankEntity,
-  AttendancePermission,
 } from 'cts-entities';
 
 import { CreateEmployeeDto, UpdateEmployeeDto } from './dto';
@@ -46,6 +44,7 @@ import {
   runInTransaction,
   sendAndHandleRpcExceptionPromise,
   STAFF_FIND_ONE,
+  colSafe,
 } from '../common';
 import { EmployeeHasPositionService } from './employeeHasPosition.service';
 import { ContractService } from '../contract/contract.service';
@@ -256,6 +255,7 @@ export class EmployeeService {
         presence,
         permission,
         vacation,
+        dismissal,
         department_id = undefined,
         position_id = undefined,
         birthdayStart = undefined,
@@ -284,7 +284,7 @@ export class EmployeeService {
         staffAlias = 'staff',
         headquartersAlias = 'headquarter',
         projectAlias = 'project',
-        bondsHasStaffAlias = 'bondsHasStaff',
+        bondsHasRecordAlias = 'bondsHasRecord',
         bondAlias = 'bond',
         vacationAlias = 'vacation',
         attendancePermissionsAlias = 'attendancePermissionsAlias',
@@ -297,21 +297,22 @@ export class EmployeeService {
 
       const joins = [
         {
-          flag: joinAll || position || staff || bonds,
+          flag:
+            joinAll ||
+            contract ||
+            permission ||
+            position ||
+            staff ||
+            bonds ||
+            bank ||
+            vacation ||
+            dismissal ||
+            bonds,
           path: col<EmployeeEntity>(employeeAlias, 'employmentRecord'),
           alias: employmentRecordAlias,
         },
         {
-          flag:
-            joinAll ||
-            contract ||
-            bonds ||
-            bank ||
-            permission ||
-            presence ||
-            vacation ||
-            position ||
-            staff,
+          flag: joinAll || presence || position || staff,
           path: col<EmploymentRecordEntity>(
             employmentRecordAlias,
             'employeeHasPosition',
@@ -324,11 +325,12 @@ export class EmployeeService {
             employmentRecordAlias,
             'bondHasEmployee',
           ),
-          alias: bondsHasStaffAlias,
+          alias: bondsHasRecordAlias,
+          condition: `${colSafe<BondHasEmployee>(bondsHasRecordAlias, 'date_limit')}::DATE <= NOW()`,
         },
         {
           flag: joinAll || bonds,
-          path: col<BondHasEmployee>(bondsHasStaffAlias, 'bond'),
+          path: col<BondHasEmployee>(bondsHasRecordAlias, 'bond'),
           alias: bondAlias,
         },
         {
@@ -403,8 +405,8 @@ export class EmployeeService {
         },
       ];
 
-      for (const { flag, path, alias } of joins) {
-        if (flag) employeesQuery.leftJoinAndSelect(path, alias);
+      for (const { flag, path, alias, condition = undefined } of joins) {
+        if (flag) employeesQuery.leftJoinAndSelect(path, alias, condition);
       }
 
       const filters: Record<string, any> = {
@@ -466,6 +468,19 @@ export class EmployeeService {
             status,
           },
         );
+
+        if (
+          status !== STATUS_EMPLOYEE.DISMISSAL &&
+          (contract || joinAll || presence || position || staff || !dismissal)
+        ) {
+          employeesQuery.andWhere(
+            `${col<EmploymentRecordEntity>(employmentRecordAlias, 'date_end')} IS NULL`,
+          );
+        } else if (dismissal) {
+          employeesQuery.orderBy(
+            `${col<EmploymentRecordEntity>(employmentRecordAlias, 'date_end')}`,
+          );
+        }
       }
 
       if (registerStart && registerEnd) {
@@ -518,6 +533,12 @@ export class EmployeeService {
           );
       }
 
+      // if (bonds) {
+      //   employeesQuery.where(
+      //     `${col<BondHasEmployee>(bondsHasRecordAlias, 'date_limit')} <= NOW()`,
+      //   );
+      // }
+
       let result: EmployeeEntity[];
       let totalResult: number;
 
@@ -525,6 +546,7 @@ export class EmployeeService {
         result = await employeesQuery.getMany();
         totalResult = result.length;
       } else {
+        console.log(employeesQuery.getSql());
         [result, totalResult] = await employeesQuery.getManyAndCount();
       }
 

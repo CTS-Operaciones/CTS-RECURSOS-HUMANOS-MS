@@ -147,6 +147,12 @@ export class FilterRelationsDto<T> extends FilterEnumsDto<T> {
   @ToBoolean('permission')
   permission: boolean = false;
 
+  @IsBoolean()
+  @IsOptional()
+  @Type(() => Boolean)
+  @ToBoolean('dismissal')
+  dismissal: boolean = false;
+
   @IsNumber()
   @IsOptional()
   @IsPositive()
