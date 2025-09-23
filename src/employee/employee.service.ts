@@ -1,9 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   DataSource,
   DeepPartial,
   FindOneOptions,
+  IsNull,
   Repository,
   UpdateResult,
 } from 'typeorm';
@@ -17,7 +18,9 @@ import {
   BondHasEmployee,
   Headquarters,
   Project,
-  AttendancePermission,
+  EmploymentRecordEntity,
+  findMaxAndRegistered,
+  BankEntity,
 } from 'cts-entities';
 
 import { CreateEmployeeDto, UpdateEmployeeDto } from './dto';
@@ -32,15 +35,20 @@ import {
   ErrorManager,
   FilterRelationsDto,
   findOneByTerm,
-  FindOneDto,
   FindOneWhitTermAndRelationDto,
   IPaginationResult,
   msgError,
+  NATS_SERVICE,
+  HEADQUARTER_FIND_ONE,
   restoreResult,
   runInTransaction,
+  sendAndHandleRpcExceptionPromise,
+  STAFF_FIND_ONE,
+  colSafe,
 } from '../common';
 import { EmployeeHasPositionService } from './employeeHasPosition.service';
 import { ContractService } from '../contract/contract.service';
+import { ClientProxy } from '@nestjs/microservices';
 
 @Injectable()
 export class EmployeeService {
@@ -52,100 +60,174 @@ export class EmployeeService {
     private readonly bankService: BankService,
     private readonly typeContractService: ContractService,
     private readonly dataSource: DataSource,
+    @Inject(NATS_SERVICE) private readonly clientProxy: ClientProxy,
   ) {}
 
   public async createItem(payload: CreateEmployeeDto): Promise<EmployeeEntity> {
     try {
       const {
-        date_register,
         names,
         first_last_name,
         second_last_name,
         date_birth,
         year_old,
-        email,
-        telephone,
-        address,
-        gender,
         curp,
         rfc,
         nss,
         ine_number,
         alergy,
-        emergency_contact,
         nacionality,
         status,
         blood_type,
+        gender,
+        contract,
+      } = payload;
+
+      const {
+        date_register,
+        telephone,
+        address,
+        email,
+        emergency_contact,
         status_civil,
-        position_id,
         bank_id,
         number_account_bank,
         typeContract,
         account,
-      } = payload;
+        employee_has_position = [],
+      } = contract;
 
-      return await runInTransaction(this.dataSource, async (queryRunner) => {
-        const position = await this.positionService.findManyByIds({
-          ids: position_id,
+      if (!employee_has_position.length) {
+        throw new ErrorManager({
+          code: 'BAD_REQUEST',
+          message: msgError('NO_VALUE', 'employee_has_position'),
+        });
+      }
+
+      let employeeHasPositionArray: EmployeeHasPositions[] = [];
+
+      for (const item of employee_has_position) {
+        const { headquarter_id, position_id, parent_id = null } = item;
+        // Buscar position
+        const positionEntity = await this.positionService.findOne({
+          term: position_id,
         });
 
-        const bank = bank_id && (await this.bankService.findOne(bank_id));
+        // Buscar la sede
+        const headquarterEntity: Headquarters =
+          await sendAndHandleRpcExceptionPromise(
+            this.clientProxy,
+            HEADQUARTER_FIND_ONE,
+            {
+              id: headquarter_id,
+              relations: true,
+            },
+          );
 
-        const _typeContract = await this.typeContractService.findOne({
-          term: typeContract,
+        // Validar el parent
+        const { boss_staff_id, required_boss } = await findMaxAndRegistered({
+          dataSource: this.dataSource,
+          position_id,
+          headquarter_id,
         });
 
-        let _email: DeepPartial<EmailEntity> | undefined = undefined;
-
-        if (account.email) {
-          _email = {
-            email: account.email,
-            required_access: account.register,
-          };
+        // Validar que si la posicion requiere un jefe y parent existe
+        if (required_boss && !parent_id) {
+          throw new ErrorManager({
+            code: 'BAD_GATEWAY',
+            message: msgError('PARENT_REQUIRED'),
+          });
         }
 
+        let parentStaff: StaffEntity | undefined = undefined;
+
+        if (required_boss && parent_id && boss_staff_id.includes(parent_id)) {
+          parentStaff = await sendAndHandleRpcExceptionPromise(
+            this.clientProxy,
+            STAFF_FIND_ONE,
+            { id: parent_id },
+          );
+        } else if (
+          (!required_boss && parent_id) ||
+          (required_boss && !parent_id) ||
+          (required_boss && parent_id && !boss_staff_id.includes(parent_id))
+        ) {
+          throw new ErrorManager({
+            message: msgError('PARENT_NOT_VALID', boss_staff_id),
+            code: 'NOT_FOUND',
+          });
+        }
+
+        const staffEntity: StaffEntity = {} as StaffEntity;
+
+        staffEntity.headquarter = headquarterEntity;
+        if (parentStaff) {
+          staffEntity.parent = parentStaff;
+        }
+
+        // Crear la entidad EmployeeHasPositions
+        const employeeHasPosition: EmployeeHasPositions =
+          {} as EmployeeHasPositions;
+        employeeHasPosition.position_id = positionEntity;
+        employeeHasPosition.staff = [staffEntity];
+
+        employeeHasPositionArray.push(employeeHasPosition);
+      }
+
+      const bank = bank_id && (await this.bankService.findOne(bank_id));
+
+      const _typeContract = await this.typeContractService.findOne({
+        term: typeContract,
+      });
+
+      let _email: DeepPartial<EmailEntity> | undefined = undefined;
+
+      if (account.email) {
+        _email = {
+          email: account.email,
+          required_access: account.register,
+        };
+      }
+
+      return await runInTransaction(this.dataSource, async (queryRunner) => {
         const employee = await createResult(
           this.employeeRepository,
           {
-            date_register,
             names,
             first_last_name,
             second_last_name,
             date_birth,
             year_old,
-            email,
-            telephone,
-            address,
             gender,
             curp,
             rfc,
             nss,
             ine_number,
             alergy,
-            emergency_contact,
             nacionality,
             status,
             blood_type,
-            status_civil,
-            number_account_bank: bank ? number_account_bank : undefined,
-            bank: bank ? bank : undefined,
-            typeContract: _typeContract,
             email_cts: _email && _email,
+            employmentRecord: [
+              {
+                email,
+                address,
+                emergency_contact,
+                date_register,
+                telephone,
+                bank: bank as BankEntity,
+                number_account_bank: number_account_bank,
+                status_civil,
+                typeContract: _typeContract,
+                employeeHasPosition: employeeHasPositionArray,
+              },
+            ],
           },
           EmployeeEntity,
           queryRunner,
         );
 
-        const employeeHasPosition = await this.employeeHasPostionService.create(
-          employee,
-          position,
-          queryRunner,
-        );
-
-        return {
-          ...employee,
-          position: employeeHasPosition.map((item) => item.id),
-        };
+        return employee;
       });
     } catch (error) {
       throw ErrorManager.createSignatureError(error);
@@ -170,10 +252,10 @@ export class EmployeeService {
         gener,
         blood,
         statusCivil,
-        dismissal,
         presence,
         permission,
         vacation,
+        dismissal,
         department_id = undefined,
         position_id = undefined,
         birthdayStart = undefined,
@@ -190,6 +272,7 @@ export class EmployeeService {
       const skip = page > 0 ? (page - 1) * limit : 0;
 
       const employeeAlias = 'employee',
+        employmentRecordAlias = 'employmentRecord',
         employeeHasPositionAlias = 'ehp',
         positionAlias = 'position',
         documentsAlias = 'documents',
@@ -201,9 +284,8 @@ export class EmployeeService {
         staffAlias = 'staff',
         headquartersAlias = 'headquarter',
         projectAlias = 'project',
-        bondsHasStaffAlias = 'bondsHasStaff',
+        bondsHasRecordAlias = 'bondsHasRecord',
         bondAlias = 'bond',
-        dismissalAlias = 'dismissal',
         vacationAlias = 'vacation',
         attendancePermissionsAlias = 'attendancePermissionsAlias',
         permissionAlias = 'permission';
@@ -215,9 +297,62 @@ export class EmployeeService {
 
       const joins = [
         {
-          flag: joinAll || position || staff || bonds,
-          path: col<EmployeeEntity>(employeeAlias, 'employeeHasPosition'),
+          flag:
+            joinAll ||
+            contract ||
+            permission ||
+            position ||
+            staff ||
+            bonds ||
+            bank ||
+            vacation ||
+            dismissal ||
+            bonds,
+          path: col<EmployeeEntity>(employeeAlias, 'employmentRecord'),
+          alias: employmentRecordAlias,
+        },
+        {
+          flag: joinAll || presence || position || staff,
+          path: col<EmploymentRecordEntity>(
+            employmentRecordAlias,
+            'employeeHasPosition',
+          ),
           alias: employeeHasPositionAlias,
+        },
+        {
+          flag: joinAll || bonds,
+          path: col<EmploymentRecordEntity>(
+            employmentRecordAlias,
+            'bondHasEmployee',
+          ),
+          alias: bondsHasRecordAlias,
+          condition: `${colSafe<BondHasEmployee>(bondsHasRecordAlias, 'date_limit')}::DATE <= NOW()`,
+        },
+        {
+          flag: joinAll || bonds,
+          path: col<BondHasEmployee>(bondsHasRecordAlias, 'bond'),
+          alias: bondAlias,
+        },
+        {
+          flag: joinAll || contract,
+          path: col<EmploymentRecordEntity>(
+            employmentRecordAlias,
+            'typeContract',
+          ),
+          alias: typeContractAlias,
+        },
+        {
+          flag: joinAll || bank,
+          path: col<EmploymentRecordEntity>(employmentRecordAlias, 'bank'),
+          alias: bankAlias,
+        },
+        {
+          flag: joinAll || permission,
+          path: col<EmploymentRecordEntity>(
+            employmentRecordAlias,
+            'attendancePermissions',
+          ),
+          alias: attendancePermissionsAlias,
         },
         {
           flag: joinAll || account,
@@ -242,28 +377,14 @@ export class EmployeeService {
           path: col<PositionEntity>(positionAlias, 'department'),
           alias: deparmentAlias,
         },
-        {
-          flag: joinAll || bonds,
-          path: col<EmployeeEntity>(emailAlias, 'bondHasEmployee'),
-          alias: bondsHasStaffAlias,
-        },
-        {
-          flag: joinAll || dismissal,
-          path: col<EmployeeEntity>(employeeAlias, 'dismissals'),
-          alias: dismissalAlias,
-        },
+
         {
           flag: joinAll || vacation,
-          path: col<EmployeeEntity>(employeeAlias, 'vacations'),
+          path: col<EmploymentRecordEntity>(employmentRecordAlias, 'vacations'),
           alias: vacationAlias,
         },
         {
-          flag: joinAll || bonds,
-          path: col<BondHasEmployee>(bondsHasStaffAlias, 'bond'),
-          alias: bondAlias,
-        },
-        {
-          flag: joinAll || staff || project_id || bonds || presence,
+          flag: joinAll || staff || project_id || presence,
           path: col<EmployeeHasPositions>(employeeHasPositionAlias, 'staff'),
           alias: staffAlias,
         },
@@ -282,20 +403,10 @@ export class EmployeeService {
           path: col<EmployeeEntity>(employeeAlias, 'document'),
           alias: documentsAlias,
         },
-        {
-          flag: joinAll || bank,
-          path: col<EmployeeEntity>(employeeAlias, 'bank'),
-          alias: bankAlias,
-        },
-        {
-          flag: joinAll || contract,
-          path: col<EmployeeEntity>(employeeAlias, 'typeContract'),
-          alias: typeContractAlias,
-        },
       ];
 
-      for (const { flag, path, alias } of joins) {
-        if (flag) employeesQuery.leftJoinAndSelect(path, alias);
+      for (const { flag, path, alias, condition = undefined } of joins) {
+        if (flag) employeesQuery.leftJoinAndSelect(path, alias, condition);
       }
 
       const filters: Record<string, any> = {
@@ -333,18 +444,6 @@ export class EmployeeService {
         );
       }
 
-      if (relations || bonds) {
-        employeesQuery
-          .leftJoinAndSelect(
-            `${col<EmployeeEntity>(employeeAlias, 'bondHasEmployee')}`,
-            bondsHasStaffAlias,
-          )
-          .leftJoinAndSelect(
-            `${col<BondHasEmployee>(bondsHasStaffAlias, 'bond')}`,
-            bondAlias,
-          );
-      }
-
       if (birthdayStart && birthdayEnd) {
         if (birthdayStart > birthdayEnd) {
           throw new ErrorManager({
@@ -352,47 +451,13 @@ export class EmployeeService {
             message: msgError('DATE_RANGE_INCORRECT'),
           });
         }
-      }
 
-      if (relations || dismissal) {
-        employeesQuery.leftJoinAndSelect(
-          `${col<EmployeeEntity>(employeeAlias, 'dismissals')}`,
-          dismissalAlias,
-        );
-      }
-
-      if (relations || vacation) {
-        employeesQuery.leftJoinAndSelect(
-          `${col<EmployeeEntity>(employeeAlias, 'vacations')}`,
-          vacationAlias,
-        );
-      }
-
-      if (relations || permission) {
-        employeesQuery.leftJoinAndSelect(
-          `${col<EmployeeEntity>(employeeAlias, 'attendancePermissions')}`,
-          attendancePermissionsAlias,
-        );
-      }
-
-      if (relations || documents) {
-        employeesQuery.leftJoinAndSelect(
-          `${col<EmployeeEntity>(employeeAlias, 'document')}`,
-          documentsAlias,
-        );
-      }
-
-      if (relations || bank) {
-        employeesQuery.leftJoinAndSelect(
-          `${col<EmployeeEntity>(employeeAlias, 'bank')}`,
-          bankAlias,
-        );
-      }
-
-      if (relations || contract) {
-        employeesQuery.leftJoinAndSelect(
-          `${col<EmployeeEntity>(employeeAlias, 'typeContract')}`,
-          typeContractAlias,
+        employeesQuery.andWhere(
+          `${col<EmployeeEntity>(employeeAlias, 'date_birth')} BETWEEN :birthdayStart AND :birthdayEnd`,
+          {
+            birthdayStart,
+            birthdayEnd,
+          },
         );
       }
 
@@ -403,16 +468,19 @@ export class EmployeeService {
             status,
           },
         );
-      }
 
-      if (nacionality) {
-        employeesQuery.andWhere(
-          `${col<EmployeeEntity>(employeeAlias, 'date_birth')} BETWEEN :birthdayStart AND :birthdayEnd`,
-          {
-            birthdayStart,
-            birthdayEnd,
-          },
-        );
+        if (
+          status !== STATUS_EMPLOYEE.DISMISSAL &&
+          (contract || joinAll || presence || position || staff || !dismissal)
+        ) {
+          employeesQuery.andWhere(
+            `${col<EmploymentRecordEntity>(employmentRecordAlias, 'date_end')} IS NULL`,
+          );
+        } else if (dismissal) {
+          employeesQuery.orderBy(
+            `${col<EmploymentRecordEntity>(employmentRecordAlias, 'date_end')}`,
+          );
+        }
       }
 
       if (registerStart && registerEnd) {
@@ -424,7 +492,7 @@ export class EmployeeService {
         }
 
         employeesQuery.andWhere(
-          `${col<EmployeeEntity>(employeeAlias, 'date_register')} BETWEEN :registerStart AND :registerEnd`,
+          `${col<EmploymentRecordEntity>(employmentRecordAlias, 'date_register')} BETWEEN :registerStart AND :registerEnd`,
           {
             registerStart,
             registerEnd,
@@ -465,6 +533,12 @@ export class EmployeeService {
           );
       }
 
+      // if (bonds) {
+      //   employeesQuery.where(
+      //     `${col<BondHasEmployee>(bondsHasRecordAlias, 'date_limit')} <= NOW()`,
+      //   );
+      // }
+
       let result: EmployeeEntity[];
       let totalResult: number;
 
@@ -472,6 +546,7 @@ export class EmployeeService {
         result = await employeesQuery.getMany();
         totalResult = result.length;
       } else {
+        console.log(employeesQuery.getSql());
         [result, totalResult] = await employeesQuery.getManyAndCount();
       }
 
@@ -496,34 +571,47 @@ export class EmployeeService {
     allRelations,
   }: FindOneWhitTermAndRelationDto): Promise<EmployeeEntity> {
     try {
-      const options: FindOneOptions<EmployeeEntity> = {};
+      const options: FindOneOptions<EmployeeEntity> = {
+        relations: {
+          employmentRecord: { typeContract: true },
+        },
+      };
 
       if (relations || allRelations) {
         options.relations = {
-          bank: true,
-          employeeHasPosition: {
-            position_id: true,
-          },
-          typeContract: true,
+          ...options.relations,
           email_cts: true,
-          dismissals: true,
-          vacations: true,
-          bondHasEmployee: true,
+          employmentRecord: {
+            employeeHasPosition: {
+              position_id: true,
+            },
+            bank: true,
+            bondHasEmployee: true,
+            vacations: true,
+            typeContract: true,
+            attendancePermissions: true,
+          },
         };
       }
 
       if (allRelations) {
         options.relations = {
           ...options.relations,
-          employeeHasPosition: {
-            position_id: true,
-            staff: { headquarter: true },
-          },
-          bondHasEmployee: {
-            bond: {
-              type_id: true,
-              description_id: true,
+          employmentRecord: {
+            employeeHasPosition: {
+              position_id: true,
+              staff: { headquarter: true },
             },
+            bondHasEmployee: {
+              bond: {
+                type_id: true,
+                description_id: true,
+              },
+            },
+            bank: true,
+            attendancePermissions: true,
+            vacations: true,
+            typeContract: true,
           },
         };
       }
@@ -531,7 +619,10 @@ export class EmployeeService {
       if (deletes) {
         options.withDeleted = true;
       } else {
-        options.where = { status: STATUS_EMPLOYEE.ACTIVE };
+        options.where = {
+          status: STATUS_EMPLOYEE.ACTIVE,
+          employmentRecord: { date_end: IsNull() },
+        };
       }
 
       const result = await findOneByTerm({
@@ -540,63 +631,89 @@ export class EmployeeService {
         options,
       });
 
-      return result;
+      return { ...result, employmentRecord: result.employmentRecord };
     } catch (error) {
       throw ErrorManager.createSignatureError(error);
     }
   }
 
   public async updateItem({ id, ...payload }: UpdateEmployeeDto) {
-    const { position_id, bank_id, typeContract, account, ...data } = payload;
+    const { contract, ...data } = payload;
+
     try {
       return await runInTransaction(this.dataSource, async (queryRunner) => {
-        const { bank, employeeHasPosition, email_cts, ...employee } =
-          await this.getItem({
+        const { employmentRecord, email_cts, ...employee } = await this.getItem(
+          {
             term: id,
             relations: true,
+          },
+        );
+
+        if (employee.status === STATUS_EMPLOYEE.DISMISSAL) {
+          throw new ErrorManager({
+            code: 'NOT_ACCEPTABLE',
+            message: msgError(
+              'MSG',
+              'No se puede actualizar un empleado despedido',
+            ),
           });
-
-        if (position_id) {
-          await this.employeeHasPostionService.updatePosition({
-            queryRunner,
-            position_id,
-            employee: employee as EmployeeEntity,
-            positionService: this.positionService,
-          });
         }
 
-        if (bank_id) {
-          const newBank = await this.bankService.findOne(bank_id);
+        // if (contract) {
+        //   if (contract.employee_has_position) {
+        //     for (const {
+        //       position_id,
+        //       headquarter_id,
+        //       parent_id,
+        //     } of contract.employee_has_position) {
+        //       await this.employeeHasPostionService.updatePosition({
+        //         queryRunner,
+        //         position_id,
+        //         employee: employmentRecord[0],
+        //         positionService: this.positionService,
+        //       });
+        //     }
+        //   }
 
-          if (bank && bank.id !== bank_id) {
-            Object.assign(bank, newBank);
-          }
-        }
+        //   if (contract && contract.bank_id) {
+        //     const newBank = await this.bankService.findOne(contract.bank_id);
 
-        if (typeContract) {
-          const newTypeContract = await this.typeContractService.findOne({
-            term: typeContract,
-          });
+        //     if (
+        //       employmentRecord[0].bank &&
+        //       employmentRecord[0].bank.id !== contract.bank_id
+        //     ) {
+        //       Object.assign(employmentRecord[0].bank, newBank);
+        //     }
+        //   }
 
-          if (typeContract && employee.typeContract.id !== typeContract) {
-            Object.assign(employee.typeContract, newTypeContract);
-          }
-        }
+        //   if (contract.typeContract) {
+        //     const newTypeContract = await this.typeContractService.findOne({
+        //       term: typeContract,
+        //     });
 
-        if (account && account.email) {
-          if (account.email && account.email !== email_cts?.email) {
-            email_cts.email = account.email;
+        //     if (
+        //       typeContract &&
+        //       employmentRecord[0].typeContract.id !== typeContract
+        //     ) {
+        //       Object.assign(employmentRecord[0].typeContract, newTypeContract);
+        //     }
+        //   }
 
-            // TODO: Notificar a Soporte del Cambio en el Email
-          }
-        }
+        //   if (account && account.email) {
+        //     if (account.email && account.email !== email_cts?.email) {
+        //       email_cts.email = account.email;
 
-        // TODO: #6 Validar que se pueda eliminar la cuenta al desactivar
+        //       // TODO: Notificar a Soporte del Cambio en el Email
+        //     }
+        //   }
 
-        Object.assign(employee, {
-          ...data,
-          bank,
-        });
+        //   // TODO: #6 Validar que se pueda eliminar la cuenta al desactivar
+
+        //   /*Object.assign(employmentRecord[0], {
+        //     ...employmentRecord[0],
+        //     bank: bank,
+        //   });*/
+        // }
 
         const result = await createResult(
           this.employeeRepository,
@@ -625,7 +742,9 @@ export class EmployeeService {
 
       if (relations) {
         options.relations = {
-          employee_id: true,
+          employmentRecord: {
+            employee: true,
+          },
           position_id: true,
         };
       }
@@ -650,7 +769,7 @@ export class EmployeeService {
       });
 
       if (
-        employee.employeeHasPosition.some((ehp) =>
+        employee.employmentRecord[0].employeeHasPosition.some((ehp) =>
           ehp.staff.some((s) => s.available === true),
         )
       ) {

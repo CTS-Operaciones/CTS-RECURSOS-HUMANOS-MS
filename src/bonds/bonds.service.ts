@@ -53,7 +53,6 @@ export class BondsService {
       const result = await createResult(
         this.bondHasEmployeeRepository,
         {
-          employee,
           date_assigned,
           date_limit,
           bond: {
@@ -81,7 +80,7 @@ export class BondsService {
           description_id: true,
           type_id: true,
           bondHasEmployee: {
-            employee: true,
+            employmentRecord: true,
           },
         };
       }
@@ -104,7 +103,7 @@ export class BondsService {
           description_id: true,
           type_id: true,
           bondHasEmployee: {
-            employee: true,
+            employmentRecord: true,
           },
         },
       };

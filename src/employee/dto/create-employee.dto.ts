@@ -7,6 +7,7 @@ import {
   IsEnum,
   IsNotEmpty,
   IsNumber,
+  IsObject,
   IsOptional,
   IsPhoneNumber,
   IsPositive,
@@ -29,6 +30,8 @@ import {
   IEmergencyContact,
   ToBoolean,
   IAccount,
+  IEmploymentRecordCreate,
+  IEmployeeHasPosition,
 } from '../../common/';
 
 class EmergencyContactDto implements IEmergencyContact {
@@ -58,12 +61,85 @@ class AccountDto implements IAccount {
   register: boolean = false;
 }
 
-export class CreateEmployeeDto implements IEmployeeCreate {
+export class EmployeeHasPositionDto implements IEmployeeHasPosition {
+  @IsNotEmpty()
+  @IsNumber()
+  @IsPositive()
+  @Min(1)
+  position_id: number;
+
+  @IsNotEmpty()
+  @IsNumber()
+  @IsPositive()
+  @Min(1)
+  headquarter_id: number;
+
+  @IsOptional()
+  @IsNumber()
+  @IsPositive()
+  parent_id?: number;
+}
+
+export class EmploymentRecordDto implements IEmploymentRecordCreate {
   @IsNotEmpty()
   @IsDate()
   @Type(() => Date)
   date_register: Date;
 
+  @MaxLength(15)
+  @IsString()
+  @IsOptional()
+  telephone?: string;
+
+  @MaxLength(200)
+  @IsString()
+  @IsOptional()
+  address?: string;
+
+  @IsNotEmpty()
+  @IsEmail()
+  email: string;
+
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => EmergencyContactDto)
+  emergency_contact?: EmergencyContactDto[];
+
+  @IsEnum(STATUS_CIVIL)
+  @IsOptional()
+  status_civil?: STATUS_CIVIL;
+
+  @IsString()
+  @MaxLength(20)
+  @IsOptional()
+  number_account_bank?: string;
+
+  // Relations
+  @IsOptional()
+  @IsNumber()
+  @IsPositive()
+  @Min(1)
+  bank_id?: number;
+
+  @IsNumber()
+  @IsPositive()
+  @IsNotEmpty()
+  @Min(1)
+  typeContract: number;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => AccountDto)
+  account: AccountDto;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => EmployeeHasPositionDto)
+  employee_has_position: EmployeeHasPositionDto[];
+}
+
+export class CreateEmployeeDto implements IEmployeeCreate {
   @IsNotEmpty()
   @IsString()
   @MaxLength(100)
@@ -85,20 +161,6 @@ export class CreateEmployeeDto implements IEmployeeCreate {
   @IsNumber()
   @Min(18)
   year_old: number;
-
-  @IsNotEmpty()
-  @IsEmail()
-  email: string;
-
-  @MaxLength(15)
-  @IsString()
-  @IsOptional()
-  telephone?: string;
-
-  @MaxLength(200)
-  @IsString()
-  @IsOptional()
-  address?: string;
 
   @IsNotEmpty()
   @IsEnum(GENDER)
@@ -129,12 +191,6 @@ export class CreateEmployeeDto implements IEmployeeCreate {
   @IsOptional()
   alergy?: string;
 
-  @IsArray()
-  @IsOptional()
-  @ValidateNested({ each: true })
-  @Type(() => EmergencyContactDto)
-  emergency_contact?: EmergencyContactDto[];
-
   @IsNotEmpty()
   @IsEnum(NACIONALITY_EMPLOYEE)
   nacionality: NACIONALITY_EMPLOYEE;
@@ -146,36 +202,9 @@ export class CreateEmployeeDto implements IEmployeeCreate {
   @IsEnum(BLOOD_TYPE)
   blood_type?: BLOOD_TYPE;
 
-  @IsEnum(STATUS_CIVIL)
+  @IsObject()
   @IsOptional()
-  status_civil?: STATUS_CIVIL;
-
-  @IsString()
-  @MaxLength(20)
-  @IsOptional()
-  number_account_bank?: string;
-
-  // Relations
-  @IsOptional()
-  @IsNumber()
-  @IsPositive()
-  @Min(1)
-  bank_id?: number;
-
-  @IsArray()
-  @ArrayNotEmpty()
-  @IsNumber({}, { each: true })
-  @IsPositive({ each: true })
-  position_id: number[];
-
-  @IsNumber()
-  @IsPositive()
-  @IsNotEmpty()
-  @Min(1)
-  typeContract: number;
-
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => AccountDto)
-  account: IAccount;
+  @ValidateNested({ each: true })
+  @Type(() => EmploymentRecordDto)
+  contract: EmploymentRecordDto;
 }

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, FindOneOptions, Repository } from 'typeorm';
+import { FindOneOptions, Repository } from 'typeorm';
 import { VacationEntity } from 'cts-entities';
 
 import {
@@ -8,7 +8,6 @@ import {
   deleteResult,
   ErrorManager,
   findOneByTerm,
-  runInTransaction,
   updateResult,
 } from '../common';
 import { CreateVacationDto, UpdateVacationDto } from './dto';
@@ -41,7 +40,7 @@ export class VacationService {
       const result = await createResult(
         this.vacationRepository,
         {
-          employee: _employee,
+          employmentRecord: { employee: _employee },
           endDate,
           startDate,
           requested_day,
@@ -64,7 +63,7 @@ export class VacationService {
 
       if (relations) {
         options.relations = {
-          employee: true,
+          employmentRecord: { employee: true },
         };
       }
 
