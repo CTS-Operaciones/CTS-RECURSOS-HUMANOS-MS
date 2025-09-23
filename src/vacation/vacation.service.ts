@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, FindOneOptions, Repository } from 'typeorm';
+import { FindOneOptions, Repository } from 'typeorm';
 import { VacationEntity } from 'cts-entities';
 
 import {
@@ -8,7 +8,6 @@ import {
   deleteResult,
   ErrorManager,
   findOneByTerm,
-  runInTransaction,
   updateResult,
 } from '../common';
 import { CreateVacationDto, UpdateVacationDto } from './dto';

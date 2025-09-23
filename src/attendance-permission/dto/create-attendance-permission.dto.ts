@@ -14,9 +14,12 @@ import {
 
 import { ICreateAttendancePermission } from '../../common';
 
-export class CreateAttendancePermissionDto
-  implements ICreateAttendancePermission
-{
+export class CreateAttendancePermissionDto implements ICreateAttendancePermission {
+  @IsNumber()
+  @IsPositive()
+  @IsNotEmpty()
+  employee_id: number;
+
   @IsEnum(ATTENDANCE_PERMISSION_TYPE)
   @IsNotEmpty()
   permission_type: ATTENDANCE_PERMISSION_TYPE;
@@ -29,16 +32,38 @@ export class CreateAttendancePermissionDto
   @IsDate()
   end_date: Date;
 
+  @IsOptional()
+  @IsString()
+  time_start?: string = '00:00:00';
+
+  @IsOptional()
+  @IsString()
+  time_end?: string = '00:00:00';
+
   @IsNotEmpty()
   @IsString()
   reason: string;
 
-  @IsEnum(STATUS_VACATIONS_PERMISSION)
-  @IsOptional()
-  status: STATUS_VACATIONS_PERMISSION = STATUS_VACATIONS_PERMISSION.PENDING;
-
   @IsNotEmpty()
   @IsNumber()
+  requested_at: number = 0;
+}
+
+export class SetStatusOfPermissionDto {
+  @IsNumber()
   @IsPositive()
-  requested_at: number;
+  @IsNotEmpty()
+  id: number;
+
+  @IsEnum(STATUS_VACATIONS_PERMISSION)
+  @IsNotEmpty()
+  status: STATUS_VACATIONS_PERMISSION;
+
+  @IsString()
+  @IsNotEmpty()
+  approved_by: string;
+
+  @IsString()
+  @IsNotEmpty()
+  approved_at: string;
 }

@@ -4,6 +4,7 @@ import { MessagePattern, Payload } from '@nestjs/microservices';
 import { AttendancePermissionService } from './attendance-permission.service';
 import {
   CreateAttendancePermissionDto,
+  SetStatusOfPermissionDto,
   UpdateAttendancePermissionDto,
 } from './dto';
 import { PaginationRelationsDto } from 'src/common';
@@ -21,6 +22,11 @@ export class AttendancePermissionController {
     return this.attendancePermissionService.create(
       createAttendancePermissionDto,
     );
+  }
+
+  @MessagePattern('attendancePermission.setStatusOfPermission')
+  setStatusOfPermission(payload: SetStatusOfPermissionDto) {
+    return this.attendancePermissionService.setStatusOfPermission(payload);
   }
 
   @MessagePattern('attendancePermission.findAll')
