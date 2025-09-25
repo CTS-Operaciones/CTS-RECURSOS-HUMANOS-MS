@@ -1,4 +1,5 @@
 import {
+  IsBoolean,
   IsDate,
   IsEnum,
   IsNotEmpty,
@@ -7,12 +8,13 @@ import {
   IsPositive,
   IsString,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import {
   ATTENDANCE_PERMISSION_TYPE,
   STATUS_VACATIONS_PERMISSION,
 } from 'cts-entities';
 
-import { ICreateAttendancePermission } from '../../common';
+import { ICreateAttendancePermission, ToBoolean } from '../../common';
 
 export class CreateAttendancePermissionDto implements ICreateAttendancePermission {
   @IsNumber()
@@ -40,6 +42,18 @@ export class CreateAttendancePermissionDto implements ICreateAttendancePermissio
   @IsString()
   time_end?: string = '00:00:00';
 
+  @IsBoolean()
+  @IsOptional()
+  @Type(() => Boolean)
+  @ToBoolean('required_justified')
+  required_justified: boolean = false;
+
+  @IsBoolean()
+  @IsOptional()
+  @Type(() => Boolean)
+  @ToBoolean('required_presences')
+  required_presences: boolean = false;
+
   @IsNotEmpty()
   @IsString()
   reason: string;
@@ -66,4 +80,17 @@ export class SetStatusOfPermissionDto {
   @IsString()
   @IsNotEmpty()
   approved_at: string;
+}
+
+export class AddJustificationDto {
+  @IsNumber()
+  @IsPositive()
+  @IsNotEmpty()
+  id: number;
+
+  @IsBoolean()
+  @IsNotEmpty()
+  @Type(() => Boolean)
+  @ToBoolean('justification')
+  justification: boolean;
 }

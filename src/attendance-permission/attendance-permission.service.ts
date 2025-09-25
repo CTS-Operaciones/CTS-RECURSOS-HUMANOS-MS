@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
-  Between,
   FindManyOptions,
   FindOneOptions,
   LessThanOrEqual,
@@ -17,6 +16,7 @@ import {
 } from 'cts-entities';
 
 import {
+  AddJustificationDto,
   CreateAttendancePermissionDto,
   SetStatusOfPermissionDto,
   UpdateAttendancePermissionDto,
@@ -52,6 +52,8 @@ export class AttendancePermissionService {
         requested_at,
         time_end,
         time_start,
+        required_justified,
+        required_presences,
       } = createAttendancePermissionDto;
 
       if (end_date < start_date) {
@@ -110,6 +112,8 @@ export class AttendancePermissionService {
           requested_at,
           time_end,
           time_start,
+          required_presences,
+          required_justified,
         },
         AttendancePermission,
       );
@@ -138,9 +142,37 @@ export class AttendancePermissionService {
         attendancePermissions,
       );
 
-      // TODO: Ejecutar el trigger para actualizar la asistencia del empleado
+      // TODO: #9 Enviar notificacion al empleado (opcional)
 
-      // TODO: Enviar notificacion al empleado (opcional)
+      return result;
+    } catch (error) {
+      throw ErrorManager.createSignatureError(error);
+    }
+  }
+
+  async addJustificationPresence(payload: AddJustificationDto) {
+    try {
+      const { id, justification } = payload;
+
+      const attendancePermission = await this.findOne(id);
+
+      if (!attendancePermission.required_justified) {
+        throw new ErrorManager({
+          code: 'NOT_ACCEPTABLE',
+          message: msgError(
+            'MSG',
+            'No se puede agregar justificación a un permiso que no requiere justificación',
+          ),
+        });
+      }
+
+      Object.assign(attendancePermission, { justified: justification });
+
+      const result = await updateResult(
+        this.attendancePermissionRepository,
+        id,
+        attendancePermission,
+      );
 
       return result;
     } catch (error) {
