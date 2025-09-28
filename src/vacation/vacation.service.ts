@@ -8,10 +8,12 @@ import {
   deleteResult,
   ErrorManager,
   findOneByTerm,
+  msgError,
   updateResult,
 } from '../common';
 import { CreateVacationDto, UpdateVacationDto } from './dto';
 import { EmployeeService } from '../employee/employee.service';
+import { HolidayService } from '../holiday/holiday.service';
 
 @Injectable()
 export class VacationService {
@@ -19,6 +21,7 @@ export class VacationService {
     @InjectRepository(VacationEntity)
     private readonly vacationRepository: Repository<VacationEntity>,
     private readonly employeeService: EmployeeService,
+    private readonly holidayService: HolidayService,
   ) {}
 
   async create(createVacationDto: CreateVacationDto) {
@@ -37,10 +40,38 @@ export class VacationService {
         term: employee,
       });
 
+      const activeContract = _employee.employmentRecord[0];
+
+      if (!activeContract) {
+        throw new ErrorManager({
+          code: 'BAD_REQUEST',
+          message: msgError('MSG', 'El empleado no tiene un contrato activo'),
+        });
+      }
+
+      const daysRequested = await this.calculateBusinessDays(
+        startDate,
+        endDate,
+      );
+
+      if (daysRequested > activeContract.vacations_days!) {
+        throw new ErrorManager({
+          code: 'BAD_REQUEST',
+          message: msgError('MSG', 'Días de vacaciones insuficientes'),
+        });
+      }
+
+      if (daysRequested > _employee.employmentRecord[0].vacations_days!) {
+        throw new ErrorManager({
+          code: 'BAD_REQUEST',
+          message: msgError('MSG', 'Días de vacaciones insuficientes'),
+        });
+      }
+
       const result = await createResult(
         this.vacationRepository,
         {
-          employmentRecord: { employee: _employee },
+          employmentRecord: activeContract,
           endDate,
           startDate,
           requested_day,
@@ -102,5 +133,27 @@ export class VacationService {
     } catch (error) {
       throw ErrorManager.createSignatureError(error);
     }
+  }
+
+  private async calculateBusinessDays(start: Date, end: Date) {
+    let count = 0;
+    const current = new Date(start);
+
+    const holidays = await this.holidayService.findAll({ all: true });
+
+    const holidayDates = holidays.data.map(
+      (h) => h.holiday_date.toISOString().split('T')[0],
+    );
+
+    while (current <= end) {
+      const currentDateStr = current.toISOString().split('T')[0];
+      const day = current.getDay();
+      if (day !== 0 && day !== 6 && !holidayDates.includes(currentDateStr)) {
+        count++;
+      }
+      current.setDate(current.getDate() + 1);
+    }
+
+    return count;
   }
 }

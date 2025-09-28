@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { ClientProxy } from '@nestjs/microservices';
 import {
   DataSource,
   DeepPartial,
@@ -45,18 +46,19 @@ import {
   sendAndHandleRpcExceptionPromise,
   STAFF_FIND_ONE,
   colSafe,
+  paginationResult,
 } from '../common';
-import { EmployeeHasPositionService } from './employeeHasPosition.service';
 import { ContractService } from '../contract/contract.service';
-import { ClientProxy } from '@nestjs/microservices';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class EmployeeService {
   constructor(
     @InjectRepository(EmployeeEntity)
     private readonly employeeRepository: Repository<EmployeeEntity>,
+    @InjectRepository(EmploymentRecordEntity)
+    private readonly employmentRecordRepository: Repository<EmploymentRecordEntity>,
     private readonly positionService: PositionService,
-    private readonly employeeHasPostionService: EmployeeHasPositionService,
     private readonly bankService: BankService,
     private readonly typeContractService: ContractService,
     private readonly dataSource: DataSource,
@@ -793,5 +795,50 @@ export class EmployeeService {
     } catch (error) {
       throw ErrorManager.createSignatureError(error);
     }
+  }
+
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  async updateVacationDays() {
+    const repository = this.dataSource.getRepository(EmploymentRecordEntity);
+
+    // Obtener todos los contratos activos
+    const { data: activeContracts } = await paginationResult(
+      this.employmentRecordRepository,
+      {
+        all: true,
+        options: { where: { date_end: IsNull() } },
+      },
+    );
+
+    const today = new Date();
+
+    for (const contract of activeContracts) {
+      const yearsWorked = this.calculateYears(contract.date_register, today);
+
+      // Regla de cálculo
+      let vacationDays = 0;
+      if (yearsWorked === 0) vacationDays = 12;
+      else if (yearsWorked === 1) vacationDays = 14;
+      else if (yearsWorked === 2) vacationDays = 16;
+      else if (yearsWorked === 3) vacationDays = 18;
+      else if (yearsWorked === 4) vacationDays = 20;
+      else vacationDays = 20 + 5 * Math.floor((yearsWorked - 5) / 2 + 1);
+
+      contract.vacations_days = vacationDays;
+
+      await repository.save(contract);
+    }
+  }
+
+  private calculateYears(start: Date, end: Date): number {
+    const diff = end.getFullYear() - start.getFullYear();
+    // Ajustar si aún no cumplió aniversario este año
+    if (
+      end.getMonth() < start.getMonth() ||
+      (end.getMonth() === start.getMonth() && end.getDate() < start.getDate())
+    ) {
+      return diff - 1;
+    }
+    return diff;
   }
 }

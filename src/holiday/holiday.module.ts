@@ -13,5 +13,6 @@ const services = [];
   imports: [entities, ...services],
   controllers: [HolidayController],
   providers: [HolidayService],
+  exports: [HolidayService],
 })
 export class HolidayModule {}
