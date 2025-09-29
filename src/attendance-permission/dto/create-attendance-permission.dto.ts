@@ -14,9 +14,15 @@ import {
   STATUS_VACATIONS_PERMISSION,
 } from 'cts-entities';
 
-import { ICreateAttendancePermission, ToBoolean } from '../../common';
+import {
+  ICreateAttendancePermission,
+  PaginationRelationsDto,
+  ToBoolean,
+} from '../../common';
 
-export class CreateAttendancePermissionDto implements ICreateAttendancePermission {
+export class CreateAttendancePermissionDto
+  implements ICreateAttendancePermission
+{
   @IsNumber()
   @IsPositive()
   @IsNotEmpty()
@@ -93,4 +99,16 @@ export class AddJustificationDto {
   @Type(() => Boolean)
   @ToBoolean('justification')
   justification: boolean;
+}
+
+export class FilterDateDto extends PaginationRelationsDto {
+  @IsDate()
+  @IsOptional()
+  @Type(() => Date)
+  startDate?: Date;
+
+  @IsDate()
+  @IsOptional()
+  @Type(() => Date)
+  endDate?: Date;
 }

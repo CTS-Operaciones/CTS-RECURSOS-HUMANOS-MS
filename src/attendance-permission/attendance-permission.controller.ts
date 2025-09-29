@@ -5,6 +5,7 @@ import { AttendancePermissionService } from './attendance-permission.service';
 import {
   AddJustificationDto,
   CreateAttendancePermissionDto,
+  FilterDateDto,
   SetStatusOfPermissionDto,
   UpdateAttendancePermissionDto,
 } from './dto';
@@ -36,7 +37,7 @@ export class AttendancePermissionController {
   }
 
   @MessagePattern('attendancePermission.findAll')
-  findAll(@Payload() pagination: PaginationRelationsDto) {
+  findAll(@Payload() pagination: FilterDateDto) {
     return this.attendancePermissionService.findAll(pagination);
   }
 

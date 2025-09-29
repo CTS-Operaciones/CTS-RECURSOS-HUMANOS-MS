@@ -18,6 +18,7 @@ import {
 import {
   AddJustificationDto,
   CreateAttendancePermissionDto,
+  FilterDateDto,
   SetStatusOfPermissionDto,
   UpdateAttendancePermissionDto,
 } from './dto';
@@ -27,7 +28,6 @@ import {
   ErrorManager,
   findOneByTerm,
   msgError,
-  PaginationRelationsDto,
   paginationResult,
   updateResult,
 } from '../common';
@@ -118,6 +118,8 @@ export class AttendancePermissionService {
         AttendancePermission,
       );
 
+      // TODO: #9 Enviar notificacion al jefé inmediato
+
       return attendancePermission;
     } catch (error) {
       throw ErrorManager.createSignatureError(error);
@@ -142,7 +144,7 @@ export class AttendancePermissionService {
         attendancePermissions,
       );
 
-      // TODO: #9 Enviar notificacion al empleado (opcional)
+      // TODO: #9 Enviar notificacion al empleado(opcional)
 
       return result;
     } catch (error) {
@@ -180,10 +182,26 @@ export class AttendancePermissionService {
     }
   }
 
-  async findAll(pagination: PaginationRelationsDto) {
+  async findAll(pagination: FilterDateDto) {
     try {
-      const { relations, ..._pagination } = pagination;
+      const { startDate, endDate, relations, ..._pagination } = pagination;
       const options: FindManyOptions<AttendancePermission> = {};
+
+      if (startDate && endDate) {
+        if (startDate > endDate)
+          throw new ErrorManager({
+            code: 'NOT_ACCEPTABLE',
+            message: msgError(
+              'MSG',
+              'La fecha de fin debe ser mayor a la de inicio',
+            ),
+          });
+
+        options.where = {
+          start_date: MoreThanOrEqual(startDate),
+          end_date: LessThanOrEqual(endDate),
+        };
+      }
 
       if (relations) {
         options.relations = {
@@ -266,6 +284,18 @@ export class AttendancePermissionService {
         updateAttendancePermissionDto;
 
       const attendancePermission = await this.findOne(id);
+
+      if (
+        attendancePermission.status === STATUS_VACATIONS_PERMISSION.APPROVED
+      ) {
+        throw new ErrorManager({
+          code: 'NOT_ACCEPTABLE',
+          message: msgError(
+            'MSG',
+            'No se puede modificar un permiso que ya ha sido aprobado',
+          ),
+        });
+      }
 
       Object.assign(attendancePermission, {
         permission_type,

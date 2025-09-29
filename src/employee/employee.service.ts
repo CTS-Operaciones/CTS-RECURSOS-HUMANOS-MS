@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ClientProxy } from '@nestjs/microservices';
 import {
@@ -49,7 +50,6 @@ import {
   paginationResult,
 } from '../common';
 import { ContractService } from '../contract/contract.service';
-import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class EmployeeService {
@@ -301,6 +301,7 @@ export class EmployeeService {
         {
           flag:
             joinAll ||
+            !joinAll ||
             contract ||
             permission ||
             position ||
@@ -799,8 +800,6 @@ export class EmployeeService {
 
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async updateVacationDays() {
-    const repository = this.dataSource.getRepository(EmploymentRecordEntity);
-
     // Obtener todos los contratos activos
     const { data: activeContracts } = await paginationResult(
       this.employmentRecordRepository,
@@ -826,13 +825,13 @@ export class EmployeeService {
 
       contract.vacations_days = vacationDays;
 
-      await repository.save(contract);
+      await this.employmentRecordRepository.save(contract);
     }
   }
 
   private calculateYears(start: Date, end: Date): number {
     const diff = end.getFullYear() - start.getFullYear();
-    // Ajustar si aún no cumplió aniversario este año
+
     if (
       end.getMonth() < start.getMonth() ||
       (end.getMonth() === start.getMonth() && end.getDate() < start.getDate())

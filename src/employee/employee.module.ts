@@ -1,6 +1,10 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { EmployeeEntity, EmployeeHasPositions } from 'cts-entities';
+import {
+  EmployeeEntity,
+  EmployeeHasPositions,
+  EmploymentRecordEntity,
+} from 'cts-entities';
 
 import { EmployeeService } from './employee.service';
 import { EmployeeHasPositionService } from './employeeHasPosition.service';
@@ -14,7 +18,7 @@ import { BankModule } from '../bank/bank.module';
 import { NatsModule } from '../common';
 import { ContractModule } from 'src/contract/contract.module';
 
-const entities = [EmployeeEntity, EmployeeHasPositions];
+const entities = [EmployeeEntity, EmploymentRecordEntity, EmployeeHasPositions];
 
 const servicesImport = [NatsModule, PositionModule, BankModule, ContractModule];
 
