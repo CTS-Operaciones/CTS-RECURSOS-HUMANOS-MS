@@ -3,7 +3,7 @@ import { MessagePattern, Payload } from '@nestjs/microservices';
 import { EmployeeEntity } from 'cts-entities';
 
 import { EmployeeService } from './employee.service';
-import { CreateEmployeeDto, UpdateEmployeeDto } from './dto';
+import { CreateEmployeeDto, FindByBossIdDto, UpdateEmployeeDto } from './dto';
 
 import { FilterRelationsDto, FindOneWhitTermAndRelationDto } from '../common';
 import { EmployeeHasPositionService } from './employeeHasPosition.service';
@@ -21,6 +21,11 @@ export class EmployeeController {
   @MessagePattern('findAll-employees')
   getItems(@Payload() pagination: FilterRelationsDto<EmployeeEntity>) {
     return this.employeeService.getItems(pagination);
+  }
+
+  @MessagePattern('findByBossId-employees')
+  getItemsByBossId(@Payload() { boss_id }: FindByBossIdDto) {
+    return this.employeeService.getItemsByBossId(boss_id);
   }
 
   @MessagePattern('find-one-employee')

@@ -23,6 +23,8 @@ import {
   EmploymentRecordEntity,
   findMaxAndRegistered,
   BankEntity,
+  findEmployeeByBossId,
+  createTreeStructure,
 } from 'cts-entities';
 
 import { CreateEmployeeDto, UpdateEmployeeDto } from './dto';
@@ -536,12 +538,6 @@ export class EmployeeService {
           );
       }
 
-      // if (bonds) {
-      //   employeesQuery.where(
-      //     `${col<BondHasEmployee>(bondsHasRecordAlias, 'date_limit')} <= NOW()`,
-      //   );
-      // }
-
       let result: EmployeeEntity[];
       let totalResult: number;
 
@@ -635,6 +631,18 @@ export class EmployeeService {
       });
 
       return { ...result, employmentRecord: result.employmentRecord };
+    } catch (error) {
+      throw ErrorManager.createSignatureError(error);
+    }
+  }
+
+  public async getItemsByBossId(boss_id: number) {
+    try {
+      const employees = await findEmployeeByBossId(this.dataSource, {
+        boss_id,
+      });
+
+      return createTreeStructure(employees);
     } catch (error) {
       throw ErrorManager.createSignatureError(error);
     }
