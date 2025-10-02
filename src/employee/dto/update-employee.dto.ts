@@ -1,9 +1,13 @@
 import { OmitType, PartialType } from '@nestjs/mapped-types';
 import { IsNotEmpty, IsNumber, IsPositive } from 'class-validator';
-import { CreateEmployeeDto, EmploymentRecordDto } from './create-employee.dto';
+import {
+  CreateEmployeeDto,
+  EmployeeHasPositionDto,
+  EmploymentRecordDto,
+} from './create-employee.dto';
 
 export class UpdateEmployeeDto extends PartialType(
-  OmitType(CreateEmployeeDto, ['contract'] as const),
+  OmitType(CreateEmployeeDto, ['contract', 'status'] as const),
 ) {
   @IsNumber()
   @IsPositive()
@@ -12,8 +16,15 @@ export class UpdateEmployeeDto extends PartialType(
 }
 
 export class UpdateEmployeeContractDto extends PartialType(
-  EmploymentRecordDto,
+  OmitType(EmploymentRecordDto, ['employee_has_position'] as const),
 ) {
+  @IsNumber()
+  @IsPositive()
+  @IsNotEmpty()
+  id: number;
+}
+
+export class UpdateEMployeeHasPositionsDto extends EmployeeHasPositionDto {
   @IsNumber()
   @IsPositive()
   @IsNotEmpty()

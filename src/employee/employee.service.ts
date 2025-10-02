@@ -55,6 +55,7 @@ import {
   STAFF_FIND_ONE,
   colSafe,
   paginationResult,
+  updateResult,
 } from '../common';
 import { ContractService } from '../contract/contract.service';
 
@@ -65,7 +66,6 @@ export class EmployeeService {
     private readonly employeeRepository: Repository<EmployeeEntity>,
     @InjectRepository(EmploymentRecordEntity)
     private readonly employmentRecordRepository: Repository<EmploymentRecordEntity>,
-    private readonly employeeHasPostionService: EmployeeHasPositionService,
     private readonly positionService: PositionService,
     private readonly bankService: BankService,
     private readonly typeContractService: ContractService,
@@ -665,15 +665,7 @@ export class EmployeeService {
           relations: true,
         });
 
-        if (employee.status !== data.status) {
-          throw new ErrorManager({
-            code: 'NOT_ACCEPTABLE',
-            message: msgError(
-              'MSG',
-              'No se puede actualizar el estado del empleado por este medio',
-            ),
-          });
-        }
+        Object.assign(employee, data);
 
         const result = await createResult(
           this.employeeRepository,
@@ -694,14 +686,7 @@ export class EmployeeService {
 
   public async updateEmployeeContract(payload: UpdateEmployeeContractDto) {
     try {
-      const {
-        id,
-        employee_has_position,
-        account,
-        bank_id,
-        typeContract,
-        ...data
-      } = payload;
+      const { id, account, bank_id, typeContract, ...data } = payload;
 
       return await runInTransaction(this.dataSource, async (queryRunner) => {
         let {
@@ -745,22 +730,16 @@ export class EmployeeService {
           });
         }
 
-        // Actualizar employee_has_position
-        if (employee_has_position) {
-            for (const {
-              position_id,
-              headquarter_id,
-              parent_id,
-            } of employee_has_position) {
-              await this.employeeHasPostionService.updatePosition({
-                queryRunner,
-                position_id: [position_id],
-                employee: employmentRecord[0],
-                positionService: this.positionService,
-              });
-            }
-
-        return;
+        return await createResult(
+          this.employmentRecordRepository,
+          {
+            ...employmentRecord,
+            bank: bank as BankEntity,
+            typeContract: _typeContract,
+          },
+          EmploymentRecordEntity,
+          queryRunner,
+        );
       });
     } catch (error) {
       throw ErrorManager.createSignatureError(error);

@@ -2,36 +2,29 @@ import { Inject, Injectable } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOneOptions, QueryRunner, Repository } from 'typeorm';
-import {
-  EmployeeHasPositions,
-  EmploymentRecordEntity,
-  StaffEntity,
-} from 'cts-entities';
+import { EmployeeHasPositions, EmploymentRecordEntity } from 'cts-entities';
 
 import {
-  col,
   createResult,
   deleteResult,
   ErrorManager,
   findOneByTerm,
   FindOneWhitTermAndRelationDto,
   IPosition,
-  IUpdateForCahngesInEmployeeHasPositions,
   msgError,
   NATS_SERVICE,
   paginationResult,
-  restoreResult,
-  sendAndHandleRpcExceptionPromise,
 } from '../common';
 
 import { PositionService } from '../position/position.service';
-import { EmploymentRecordDto } from './dto';
+import { UpdateEMployeeHasPositionsDto } from './dto';
 
 @Injectable()
 export class EmployeeHasPositionService {
   constructor(
     @InjectRepository(EmployeeHasPositions)
     private readonly employeeHasPostion: Repository<EmployeeHasPositions>,
+    private readonly positionService: PositionService,
     @Inject(NATS_SERVICE) private readonly clientProxy: ClientProxy,
   ) {}
 
@@ -138,7 +131,11 @@ export class EmployeeHasPositionService {
     }
   }
 
-  async verifyEmployeeHasPosition(id: number, relations: boolean = false) {
+  async verifyEmployeeHasPosition(
+    id: number,
+    relations: boolean = false,
+    all: boolean = false,
+  ) {
     try {
       const options: FindOneOptions<EmployeeHasPositions> = {};
 
@@ -148,6 +145,13 @@ export class EmployeeHasPositionService {
             employee: true,
           },
           position_id: true,
+        };
+      }
+
+      if (all) {
+        options.relations = {
+          ...options.relations,
+          staff: { headquarter: true },
         };
       }
 
@@ -176,131 +180,34 @@ export class EmployeeHasPositionService {
     }
   }
 
-  // TODO: #1 Revisar la actualización de las posiciones
-  async updatePosition({
-    queryRunner,
-    position_id,
-    employee,
-    positionService,
-  }: {
-    queryRunner: QueryRunner;
-    position_id: number[];
-    employee: EmploymentRecordEntity;
-    positionService: PositionService;
-  }) {
+  async updatePosition(payload: UpdateEMployeeHasPositionsDto) {
     try {
-      const employeeHasPositionAlias = 'ehp',
-        employeeAlias = 'employee',
-        employmentRecordAlias = 'employmentRecord',
-        positionAlias = 'position',
-        staffAlias = 'staff',
-        headquarterAlias = 'headquarter';
+      const { id, headquarter_id, position_id, parent_id } = payload;
 
-      const employeeHasPosition = await this.employeeHasPostion
-        .createQueryBuilder(employeeHasPositionAlias)
-        .addSelect(
-          `${col<EmployeeHasPositions>(employeeHasPositionAlias, 'available')}`,
-        )
-        .addSelect(
-          `${col<EmployeeHasPositions>(employeeHasPositionAlias, 'deleted_at')}`,
-        )
-        .leftJoinAndSelect(
-          `${col<EmployeeHasPositions>(employeeHasPositionAlias, 'employmentRecord')}`,
-          employmentRecordAlias,
-        )
-        .leftJoinAndSelect(
-          `${col<EmployeeHasPositions>(employeeHasPositionAlias, 'position_id')}`,
-          positionAlias,
-        )
-        .leftJoinAndSelect(
-          `${col<EmployeeHasPositions>(employeeHasPositionAlias, 'staff')}`,
-          staffAlias,
-        )
-        .leftJoinAndSelect(
-          `${col<StaffEntity>(staffAlias, 'headquarter')}`,
-          headquarterAlias,
-        )
-        .where(
-          `${col<EmploymentRecordEntity>(employmentRecordAlias, 'employee')} = :id`,
-          { id: employee.id },
-        )
-        .withDeleted()
-        .getMany();
-
-      const positionsToDelete = employeeHasPosition.filter((position) => {
-        return (
-          position.deleted_at === null &&
-          !position_id.includes(position.position_id.id)
-        );
-      });
-
-      await Promise.all(
-        positionsToDelete.map(async ({ id, staff }) => {
-          if (staff && staff.length > 0) {
-            throw new ErrorManager({
-              code: 'NOT_ACCEPTABLE',
-              message: msgError('REGISTER_NOT_DELETE_ALLOWED', id),
-            });
-          }
-
-          return await deleteResult(this.employeeHasPostion, id, queryRunner);
-        }),
+      const employeeHasPosition = await this.verifyEmployeeHasPosition(
+        id,
+        true,
+        true,
       );
 
-      const result = await Promise.all(
-        position_id.map(async (el) => {
-          const position = employeeHasPosition.find((employeeHasPosition) => {
-            return employeeHasPosition.position_id.id === el;
-          });
+      if (position_id !== employeeHasPosition.position_id.id) {
+        employeeHasPosition.position_id = await this.positionService.findOne({
+          term: position_id,
+        });
+      }
 
-          let result: EmployeeHasPositions;
-          if (position) {
-            if (position.deleted_at !== null) {
-              await restoreResult(
-                this.employeeHasPostion,
-                position.id,
-                queryRunner,
-              );
-            }
+      if (
+        employeeHasPosition.staff.some(
+          (el) => el.headquarter.id === headquarter_id,
+        )
+      ) {
+        throw new ErrorManager({
+          code: 'BAD_REQUEST',
+          message: 'The headquarter is already assigned to the employee',
+        });
+      }
 
-            result = position;
-          } else {
-            const newPosition = await positionService.findOne({
-              term: el,
-              relations: true,
-            });
-
-            result = await createResult(
-              this.employeeHasPostion,
-              {
-                employmentRecord: employee,
-                position_id: newPosition,
-              },
-              EmployeeHasPositions,
-              queryRunner,
-            );
-          }
-          return result;
-        }),
-      );
-
-      // TODO: Actualizar el staffing
-      const newPosition = result.filter(
-        (el) => !position_id.includes(el.position_id.id),
-      );
-
-      const payload: IUpdateForCahngesInEmployeeHasPositions = {
-        eHp_creates: newPosition,
-        eHp_deletes: positionsToDelete,
-      };
-
-      const staff = await sendAndHandleRpcExceptionPromise(
-        this.clientProxy,
-        'updateForChangesInEmployeeHasPositions',
-        payload,
-      );
-
-      return { ...result, staff };
+      return;
     } catch (error) {
       throw ErrorManager.createSignatureError(error);
     }

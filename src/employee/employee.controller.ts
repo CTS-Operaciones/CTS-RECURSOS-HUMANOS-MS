@@ -3,7 +3,12 @@ import { MessagePattern, Payload } from '@nestjs/microservices';
 import { EmployeeEntity } from 'cts-entities';
 
 import { EmployeeService } from './employee.service';
-import { CreateEmployeeDto, FindByBossIdDto, UpdateEmployeeDto } from './dto';
+import {
+  CreateEmployeeDto,
+  FindByBossIdDto,
+  UpdateEmployeeContractDto,
+  UpdateEmployeeDto,
+} from './dto';
 
 import { FilterRelationsDto, FindOneWhitTermAndRelationDto } from '../common';
 import { EmployeeHasPositionService } from './employeeHasPosition.service';
@@ -41,6 +46,11 @@ export class EmployeeController {
   @MessagePattern('update-employee')
   updateItem(@Payload() payload: UpdateEmployeeDto) {
     return this.employeeService.updateItem(payload);
+  }
+
+  @MessagePattern('update-employee-contract')
+  updateEmployeeContract(@Payload() payload: UpdateEmployeeContractDto) {
+    return this.employeeService.updateEmployeeContract(payload);
   }
 
   @MessagePattern('remove-employee')
