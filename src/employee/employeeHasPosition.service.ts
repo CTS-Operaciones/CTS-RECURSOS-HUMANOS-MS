@@ -10,45 +10,83 @@ import {
   ErrorManager,
   findOneByTerm,
   FindOneWhitTermAndRelationDto,
-  IPosition,
+  IUpdateForCahngesInEmployeeHasPositions,
   msgError,
   NATS_SERVICE,
   paginationResult,
+  restoreResult,
+  sendAndHandleRpcExceptionPromise,
 } from '../common';
 
 import { PositionService } from '../position/position.service';
-import { UpdateEMployeeHasPositionsDto } from './dto';
+import {
+  CreateEmployeeHasPositionDto,
+  UpdateEMployeeHasPositionsDto,
+} from './dto';
 
 @Injectable()
 export class EmployeeHasPositionService {
   constructor(
     @InjectRepository(EmployeeHasPositions)
     private readonly employeeHasPostion: Repository<EmployeeHasPositions>,
+    @InjectRepository(EmploymentRecordEntity)
+    private readonly employmentRecordRepository: Repository<EmploymentRecordEntity>,
     private readonly positionService: PositionService,
     @Inject(NATS_SERVICE) private readonly clientProxy: ClientProxy,
   ) {}
 
-  async create(
-    employee: EmploymentRecordEntity,
-    position: IPosition[],
-    queryRunner: QueryRunner,
-  ) {
+  async create({
+    id,
+    position_id,
+    headquarter_id,
+    parent_id,
+  }: CreateEmployeeHasPositionDto) {
     try {
-      const result = await Promise.all(
-        position.map(async (el) => {
-          return await createResult(
+      const existEmployeeHasPosition = await this.employeeHasPostion.findOne({
+        select: { id: true, deleted_at: true },
+        where: { employmentRecord: { id }, position_id: { id: position_id } },
+        withDeleted: true,
+        relations: { position_id: true },
+      });
+
+      existEmployeeHasPosition?.deleted_at &&
+        (await restoreResult(
+          this.employeeHasPostion,
+          existEmployeeHasPosition.id,
+        ));
+
+      const employmentRecord = await findOneByTerm({
+        repository: this.employmentRecordRepository,
+        term: id,
+      });
+
+      const posiiton = await this.positionService.findOne({
+        term: position_id,
+      });
+
+      const employee_has_position = existEmployeeHasPosition
+        ? existEmployeeHasPosition
+        : await createResult(
             this.employeeHasPostion,
             {
-              employmentRecord: employee,
-              position_id: el,
+              position_id: posiiton,
+              employmentRecord,
             },
             EmployeeHasPositions,
-            queryRunner,
           );
-        }),
+
+      const staff = await sendAndHandleRpcExceptionPromise(
+        this.clientProxy,
+        'staff.create',
+        {
+          headquarter: headquarter_id,
+          parent: parent_id,
+          employeeHasPositions: employee_has_position.id,
+          eployeeHasPositionsEntiry: employee_has_position,
+        },
       );
 
-      return result;
+      return { employee_has_position, staff };
     } catch (error) {
       throw ErrorManager.createSignatureError(error);
     }
@@ -101,15 +139,15 @@ export class EmployeeHasPositionService {
       });
 
       const data = result.data.map((el: EmployeeHasPositions) => {
-        return {
-          position_id: !relations
-            ? {
-                id: el.id,
-                created_at: el.created_at,
-                updated_at: el.updated_at,
-              }
-            : el.position_id,
-        };
+        if (relations || allRelations) {
+          return { ehp_id: el.id, ...el.position_id };
+        } else {
+          return {
+            ehp_id: el.id,
+            created_at: el.created_at,
+            updated_at: el.updated_at,
+          };
+        }
       });
 
       if (data.length <= 0) {
@@ -123,7 +161,7 @@ export class EmployeeHasPositionService {
         ...result,
         data: {
           employee_id: result.data[0].employmentRecord.employee.id,
-          position_id: data,
+          position_id: data.map((el) => el),
         },
       };
     } catch (error) {
@@ -184,13 +222,28 @@ export class EmployeeHasPositionService {
     try {
       const { id, headquarter_id, position_id, parent_id } = payload;
 
-      const employeeHasPosition = await this.verifyEmployeeHasPosition(
-        id,
-        true,
-        true,
-      );
+      const newPosition: EmployeeHasPositions[] = [],
+        oldPosition: EmployeeHasPositions[] = [];
 
-      if (position_id !== employeeHasPosition.position_id.id) {
+      const { id: _id, ...employeeHasPosition } =
+        await this.verifyEmployeeHasPosition(id, true, true);
+
+      if (employeeHasPosition.position_id.id !== position_id) {
+        const existPosition = await this.employeeHasPostion.findOne({
+          where: {
+            employmentRecord: { id: employeeHasPosition.employmentRecord.id },
+            position_id: { id: position_id },
+          },
+          withDeleted: true,
+        });
+
+        if (existPosition && !existPosition.deleted_at) {
+          await this.employeeHasPostion.restore(existPosition.id);
+          await this.employeeHasPostion.delete(_id);
+          newPosition.push(existPosition);
+          oldPosition.push({ id: _id, ...employeeHasPosition });
+        }
+
         employeeHasPosition.position_id = await this.positionService.findOne({
           term: position_id,
         });
@@ -207,7 +260,18 @@ export class EmployeeHasPositionService {
         });
       }
 
-      return;
+      const staffValidation: IUpdateForCahngesInEmployeeHasPositions = {
+        eHp_creates: newPosition,
+        eHp_deletes: oldPosition,
+      };
+
+      const staff = await sendAndHandleRpcExceptionPromise(
+        this.clientProxy,
+        'updateForChangesInEmployeeHasPositions',
+        staffValidation,
+      );
+
+      return staff;
     } catch (error) {
       throw ErrorManager.createSignatureError(error);
     }

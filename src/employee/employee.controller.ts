@@ -1,10 +1,13 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { EmployeeEntity } from 'cts-entities';
+import { plainToClass } from 'class-transformer';
 
 import { EmployeeService } from './employee.service';
 import {
   CreateEmployeeDto,
+  CreateEmployeeHasPositionDto,
+  EmployeeHasPositionDto,
   FindByBossIdDto,
   UpdateEmployeeContractDto,
   UpdateEmployeeDto,
@@ -12,7 +15,6 @@ import {
 
 import { FilterRelationsDto, FindOneWhitTermAndRelationDto } from '../common';
 import { EmployeeHasPositionService } from './employeeHasPosition.service';
-import { plainToClass } from 'class-transformer';
 
 @Controller({ path: 'employee', version: '1' })
 export class EmployeeController {
@@ -70,7 +72,12 @@ export class AsignedPositionsController {
     private readonly employeeHasPostionService: EmployeeHasPositionService,
   ) {}
 
-  @MessagePattern('asignedPositionsFindByEmployeeId')
+  @MessagePattern('create-asignedPositions')
+  createEmployeeHasPosition(@Payload() payload: CreateEmployeeHasPositionDto) {
+    return this.employeeHasPostionService.create(payload);
+  }
+
+  @MessagePattern('findByEmployeeId-asignedPositions')
   findPositionsById(
     @Payload()
     { term, relations, allRelations, deletes }: FindOneWhitTermAndRelationDto,
@@ -83,7 +90,7 @@ export class AsignedPositionsController {
     });
   }
 
-  @MessagePattern('verifyEmployeeHasPosition')
+  @MessagePattern('verifyEmployeeHasPosition-asignedPositions')
   verifyEmployeeHasPosition(
     @Payload() { id, relations = false }: { id: number; relations: boolean },
   ) {
@@ -93,7 +100,7 @@ export class AsignedPositionsController {
     );
   }
 
-  @MessagePattern('deleteEmployeeHasPosition')
+  @MessagePattern('deleteEmployeeHasPosition-asignedPositions')
   deleteEmployeeHasPosition(@Payload() { id }: { id: number }) {
     return this.employeeHasPostionService.deletePositions(id);
   }

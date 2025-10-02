@@ -80,6 +80,13 @@ export class EmployeeHasPositionDto implements IEmployeeHasPosition {
   parent_id?: number;
 }
 
+export class CreateEmployeeHasPositionDto extends EmployeeHasPositionDto {
+  @IsNumber()
+  @IsPositive()
+  @IsNotEmpty()
+  id: number;
+}
+
 export class EmploymentRecordDto implements IEmploymentRecordCreate {
   @IsNotEmpty()
   @IsDate()

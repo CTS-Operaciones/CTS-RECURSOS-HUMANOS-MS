@@ -33,7 +33,6 @@ import {
   UpdateEmployeeDto,
 } from './dto';
 
-import { EmployeeHasPositionService } from './employeeHasPosition.service';
 import { PositionService } from '../position/position.service';
 import { BankService } from '../bank/bank.service';
 
@@ -55,7 +54,6 @@ import {
   STAFF_FIND_ONE,
   colSafe,
   paginationResult,
-  updateResult,
 } from '../common';
 import { ContractService } from '../contract/contract.service';
 
