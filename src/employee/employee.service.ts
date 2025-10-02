@@ -27,8 +27,13 @@ import {
   createTreeStructure,
 } from 'cts-entities';
 
-import { CreateEmployeeDto, UpdateEmployeeDto } from './dto';
+import {
+  CreateEmployeeDto,
+  UpdateEmployeeContractDto,
+  UpdateEmployeeDto,
+} from './dto';
 
+import { EmployeeHasPositionService } from './employeeHasPosition.service';
 import { PositionService } from '../position/position.service';
 import { BankService } from '../bank/bank.service';
 
@@ -60,6 +65,7 @@ export class EmployeeService {
     private readonly employeeRepository: Repository<EmployeeEntity>,
     @InjectRepository(EmploymentRecordEntity)
     private readonly employmentRecordRepository: Repository<EmploymentRecordEntity>,
+    private readonly employeeHasPostionService: EmployeeHasPositionService,
     private readonly positionService: PositionService,
     private readonly bankService: BankService,
     private readonly typeContractService: ContractService,
@@ -648,83 +654,26 @@ export class EmployeeService {
     }
   }
 
+  //TODO: Actualizar correo electronico CTS???????
   public async updateItem({ id, ...payload }: UpdateEmployeeDto) {
-    const { contract, ...data } = payload;
+    const { ...data } = payload;
 
     try {
       return await runInTransaction(this.dataSource, async (queryRunner) => {
-        const { employmentRecord, email_cts, ...employee } = await this.getItem(
-          {
-            term: id,
-            relations: true,
-          },
-        );
+        const { email_cts, ...employee } = await this.getItem({
+          term: id,
+          relations: true,
+        });
 
-        if (employee.status === STATUS_EMPLOYEE.DISMISSAL) {
+        if (employee.status !== data.status) {
           throw new ErrorManager({
             code: 'NOT_ACCEPTABLE',
             message: msgError(
               'MSG',
-              'No se puede actualizar un empleado despedido',
+              'No se puede actualizar el estado del empleado por este medio',
             ),
           });
         }
-
-        // if (contract) {
-        //   if (contract.employee_has_position) {
-        //     for (const {
-        //       position_id,
-        //       headquarter_id,
-        //       parent_id,
-        //     } of contract.employee_has_position) {
-        //       await this.employeeHasPostionService.updatePosition({
-        //         queryRunner,
-        //         position_id,
-        //         employee: employmentRecord[0],
-        //         positionService: this.positionService,
-        //       });
-        //     }
-        //   }
-
-        //   if (contract && contract.bank_id) {
-        //     const newBank = await this.bankService.findOne(contract.bank_id);
-
-        //     if (
-        //       employmentRecord[0].bank &&
-        //       employmentRecord[0].bank.id !== contract.bank_id
-        //     ) {
-        //       Object.assign(employmentRecord[0].bank, newBank);
-        //     }
-        //   }
-
-        //   if (contract.typeContract) {
-        //     const newTypeContract = await this.typeContractService.findOne({
-        //       term: typeContract,
-        //     });
-
-        //     if (
-        //       typeContract &&
-        //       employmentRecord[0].typeContract.id !== typeContract
-        //     ) {
-        //       Object.assign(employmentRecord[0].typeContract, newTypeContract);
-        //     }
-        //   }
-
-        //   if (account && account.email) {
-        //     if (account.email && account.email !== email_cts?.email) {
-        //       email_cts.email = account.email;
-
-        //       // TODO: Notificar a Soporte del Cambio en el Email
-        //     }
-        //   }
-
-        //   // TODO: #6 Validar que se pueda eliminar la cuenta al desactivar
-
-        //   /*Object.assign(employmentRecord[0], {
-        //     ...employmentRecord[0],
-        //     bank: bank,
-        //   });*/
-        // }
 
         const result = await createResult(
           this.employeeRepository,
@@ -737,6 +686,81 @@ export class EmployeeService {
         );
 
         return result;
+      });
+    } catch (error) {
+      throw ErrorManager.createSignatureError(error);
+    }
+  }
+
+  public async updateEmployeeContract(payload: UpdateEmployeeContractDto) {
+    try {
+      const {
+        id,
+        employee_has_position,
+        account,
+        bank_id,
+        typeContract,
+        ...data
+      } = payload;
+
+      return await runInTransaction(this.dataSource, async (queryRunner) => {
+        let {
+          employeeHasPosition,
+          bank,
+          typeContract: _typeContract,
+          ...employmentRecord
+        } = await findOneByTerm({
+          repository: this.employmentRecordRepository,
+          term: id,
+          options: {
+            relations: {
+              employeeHasPosition: { position_id: true, staff: true },
+              bank: true,
+              typeContract: true,
+            },
+          },
+        });
+
+        Object.assign(employmentRecord, data);
+
+        if (employmentRecord.date_end) {
+          throw new ErrorManager({
+            code: 'NOT_ACCEPTABLE',
+            message: msgError(
+              'MSG',
+              'No se puede actualizar un contrato que ya fue finalizado',
+            ),
+          });
+        }
+
+        // Actualizar bank
+        if (bank_id && bank_id !== bank?.id) {
+          bank = await this.bankService.findOne(bank_id);
+        }
+
+        // Actualizar typeContract
+        if (typeContract && typeContract !== _typeContract?.id) {
+          _typeContract = await this.typeContractService.findOne({
+            term: typeContract,
+          });
+        }
+
+        // Actualizar employee_has_position
+        if (employee_has_position) {
+            for (const {
+              position_id,
+              headquarter_id,
+              parent_id,
+            } of employee_has_position) {
+              await this.employeeHasPostionService.updatePosition({
+                queryRunner,
+                position_id: [position_id],
+                employee: employmentRecord[0],
+                positionService: this.positionService,
+              });
+            }
+
+        return;
       });
     } catch (error) {
       throw ErrorManager.createSignatureError(error);
@@ -824,12 +848,10 @@ export class EmployeeService {
 
       // Regla de cálculo
       let vacationDays = 0;
-      if (yearsWorked === 0) vacationDays = 12;
-      else if (yearsWorked === 1) vacationDays = 14;
-      else if (yearsWorked === 2) vacationDays = 16;
-      else if (yearsWorked === 3) vacationDays = 18;
-      else if (yearsWorked === 4) vacationDays = 20;
-      else vacationDays = 20 + 5 * Math.floor((yearsWorked - 5) / 2 + 1);
+      if (yearsWorked === 1) vacationDays = 12;
+      else if (yearsWorked === 2 && yearsWorked <= 5)
+        vacationDays + 2; // TODO: Aumentar por año
+      else if (yearsWorked % 5 === 0) vacationDays + 2;
 
       contract.vacations_days = vacationDays;
 
