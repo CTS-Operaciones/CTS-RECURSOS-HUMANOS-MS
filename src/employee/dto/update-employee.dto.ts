@@ -24,7 +24,7 @@ export class UpdateEmployeeContractDto extends PartialType(
   id: number;
 }
 
-export class UpdateEMployeeHasPositionsDto extends EmployeeHasPositionDto {
+export class UpdateEmployeeHasPositionsDto extends EmployeeHasPositionDto {
   @IsNumber()
   @IsPositive()
   @IsNotEmpty()

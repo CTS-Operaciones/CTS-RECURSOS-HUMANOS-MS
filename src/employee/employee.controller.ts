@@ -11,6 +11,7 @@ import {
   FindByBossIdDto,
   UpdateEmployeeContractDto,
   UpdateEmployeeDto,
+  UpdateEmployeeHasPositionsDto,
 } from './dto';
 
 import { FilterRelationsDto, FindOneWhitTermAndRelationDto } from '../common';
@@ -75,6 +76,14 @@ export class AsignedPositionsController {
   @MessagePattern('create-asignedPositions')
   createEmployeeHasPosition(@Payload() payload: CreateEmployeeHasPositionDto) {
     return this.employeeHasPostionService.create(payload);
+  }
+
+  @MessagePattern('update-asignedPositions')
+  updateEmployeeHasPosition(
+    @Payload()
+    payload: UpdateEmployeeHasPositionsDto,
+  ) {
+    return this.employeeHasPostionService.updateEmployeeHasPositions(payload);
   }
 
   @MessagePattern('findByEmployeeId-asignedPositions')

@@ -2,7 +2,11 @@ import { Inject, Injectable } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOneOptions, QueryRunner, Repository } from 'typeorm';
-import { EmployeeHasPositions, EmploymentRecordEntity } from 'cts-entities';
+import {
+  EmployeeHasPositions,
+  EmploymentRecordEntity,
+  StaffEntity,
+} from 'cts-entities';
 
 import {
   createResult,
@@ -21,7 +25,7 @@ import {
 import { PositionService } from '../position/position.service';
 import {
   CreateEmployeeHasPositionDto,
-  UpdateEMployeeHasPositionsDto,
+  UpdateEmployeeHasPositionsDto,
 } from './dto';
 
 @Injectable()
@@ -82,7 +86,7 @@ export class EmployeeHasPositionService {
           headquarter: headquarter_id,
           parent: parent_id,
           employeeHasPositions: employee_has_position.id,
-          eployeeHasPositionsEntiry: employee_has_position,
+          eployeeHasPositionsEntity: employee_has_position,
         },
       );
 
@@ -218,7 +222,7 @@ export class EmployeeHasPositionService {
     }
   }
 
-  async updatePosition(payload: UpdateEMployeeHasPositionsDto) {
+  async updateEmployeeHasPositions(payload: UpdateEmployeeHasPositionsDto) {
     try {
       const { id, headquarter_id, position_id, parent_id } = payload;
 
@@ -230,6 +234,7 @@ export class EmployeeHasPositionService {
 
       if (employeeHasPosition.position_id.id !== position_id) {
         const existPosition = await this.employeeHasPostion.findOne({
+          select: { id: true, deleted_at: true },
           where: {
             employmentRecord: { id: employeeHasPosition.employmentRecord.id },
             position_id: { id: position_id },
@@ -237,9 +242,9 @@ export class EmployeeHasPositionService {
           withDeleted: true,
         });
 
-        if (existPosition && !existPosition.deleted_at) {
-          await this.employeeHasPostion.restore(existPosition.id);
-          await this.employeeHasPostion.delete(_id);
+        if (existPosition && !existPosition.deleted_at === null) {
+          await this.restorePostion(existPosition.id);
+          await this.deletePositions(_id);
           newPosition.push(existPosition);
           oldPosition.push({ id: _id, ...employeeHasPosition });
         }
@@ -247,6 +252,19 @@ export class EmployeeHasPositionService {
         employeeHasPosition.position_id = await this.positionService.findOne({
           term: position_id,
         });
+
+        if (!existPosition || !existPosition.deleted_at) {
+          await this.deletePositions(_id);
+
+          const { employee_has_position: saved } = await this.create({
+            id: employeeHasPosition.employmentRecord.id,
+            position_id,
+            headquarter_id,
+            parent_id,
+          });
+
+          newPosition.push(saved);
+        }
       }
 
       if (
@@ -255,29 +273,79 @@ export class EmployeeHasPositionService {
         )
       ) {
         throw new ErrorManager({
-          code: 'BAD_REQUEST',
-          message: 'The headquarter is already assigned to the employee',
+          code: 'NOT_ACCEPTABLE',
+          message: msgError(
+            'MSG',
+            'El empleado ya pertenece a la sede seleccionada',
+          ),
         });
       }
 
-      const staffValidation: IUpdateForCahngesInEmployeeHasPositions = {
-        eHp_creates: newPosition,
-        eHp_deletes: oldPosition,
-      };
+      return { employeeHasPosition };
 
-      const staff = await sendAndHandleRpcExceptionPromise(
-        this.clientProxy,
-        'updateForChangesInEmployeeHasPositions',
-        staffValidation,
-      );
+      // const staffValidation: IUpdateForCahngesInEmployeeHasPositions = {
+      //   eHp_creates: newPosition,
+      //   eHp_deletes: oldPosition,
+      // };
 
-      return staff;
+      // const staff = await sendAndHandleRpcExceptionPromise(
+      //   this.clientProxy,
+      //   'updateForChangesInEmployeeHasPositions',
+      //   staffValidation,
+      // );
+
+      // return staff;
     } catch (error) {
       throw ErrorManager.createSignatureError(error);
     }
   }
 
   async deletePositions(id: number, queryRunner?: QueryRunner) {
-    return await deleteResult(this.employeeHasPostion, id, queryRunner);
+    try {
+      const existStaff = await this.findStaffChildren(id);
+
+      if (existStaff.length > 0) {
+        throw new ErrorManager({
+          code: 'NOT_ACCEPTABLE',
+          message: msgError(
+            'MSG',
+            'No se puede eliminar un empleado con staff asignado, debe reemplazarlo o eliminar el staff antes',
+          ),
+        });
+      }
+
+      return await deleteResult(this.employeeHasPostion, id, queryRunner);
+    } catch (error) {
+      throw ErrorManager.createSignatureError(error);
+    }
+  }
+
+  async restorePostion(id: number, queryRunner?: QueryRunner) {
+    try {
+      return await restoreResult(this.employeeHasPostion, id, queryRunner);
+    } catch (error) {
+      throw ErrorManager.createSignatureError(error);
+    }
+  }
+
+  private async findStaffChildren(id: number) {
+    try {
+      const options: FindOneOptions<EmployeeHasPositions> = {
+        relations: {
+          staff: { children: true },
+        },
+        where: { id },
+      };
+
+      const { staff } = await findOneByTerm({
+        repository: this.employeeHasPostion,
+        term: id,
+        options,
+      });
+
+      return staff.map((el) => el.children).flat();
+    } catch (error) {
+      throw ErrorManager.createSignatureError(error);
+    }
   }
 }
