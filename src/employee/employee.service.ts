@@ -603,7 +603,16 @@ export class EmployeeService {
           employmentRecord: {
             employeeHasPosition: {
               position_id: true,
-              staff: { headquarter: true },
+              staff: {
+                headquarter: { project: true },
+                parent: {
+                  employeeHasPositions: {
+                    employmentRecord: {
+                      employee: true,
+                    },
+                  },
+                },
+              },
             },
             bondHasEmployee: {
               bond: {
