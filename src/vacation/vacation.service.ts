@@ -36,11 +36,11 @@ export class VacationService {
         reason = undefined,
       } = createVacationDto;
 
-      const _employee = await this.employeeService.getItem({
+      const { employmentRecord } = await this.employeeService.getItem({
         term: employee,
       });
 
-      const activeContract = _employee.employmentRecord[0];
+      const activeContract = employmentRecord[0];
 
       if (!activeContract) {
         throw new ErrorManager({
@@ -61,7 +61,7 @@ export class VacationService {
         });
       }
 
-      if (daysRequested > _employee.employmentRecord[0].vacations_days!) {
+      if (daysRequested > employmentRecord[0].vacations_days!) {
         throw new ErrorManager({
           code: 'BAD_REQUEST',
           message: msgError('MSG', 'Días de vacaciones insuficientes'),

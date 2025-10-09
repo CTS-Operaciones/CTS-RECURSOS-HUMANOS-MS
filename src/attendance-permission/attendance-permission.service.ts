@@ -74,7 +74,7 @@ export class AttendancePermissionService {
           code: 'NOT_ACCEPTABLE',
           message: msgError(
             'MSG',
-            'Para permisos por horas, debe especificar la hora de inicio y fin',
+            'Para permisos por horas, debe especificar las horas de validez de este',
           ),
         });
       } else if (
