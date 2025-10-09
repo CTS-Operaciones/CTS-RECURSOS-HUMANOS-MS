@@ -586,7 +586,9 @@ export class EmployeeService {
           email_cts: true,
           employmentRecord: {
             employeeHasPosition: {
-              position_id: true,
+              position_id: {
+                salary: true,
+              },
             },
             bank: true,
             bondHasEmployee: true,
@@ -602,7 +604,9 @@ export class EmployeeService {
           ...options.relations,
           employmentRecord: {
             employeeHasPosition: {
-              position_id: true,
+              position_id: {
+                salary: true,
+              },
               staff: {
                 headquarter: { project: true },
                 parent: {
@@ -661,7 +665,6 @@ export class EmployeeService {
     }
   }
 
-  //TODO: Actualizar correo electronico CTS???????
   public async updateItem({ id, ...payload }: UpdateEmployeeDto) {
     const { ...data } = payload;
 
