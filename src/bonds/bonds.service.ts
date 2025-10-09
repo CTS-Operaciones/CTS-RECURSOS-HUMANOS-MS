@@ -46,8 +46,9 @@ export class BondsService {
 
       const type_bonds = await this.typesBondService.findOne(type_id);
 
-      const employee = await this.employeeService.getItem({
+      const { employmentRecord } = await this.employeeService.getItem({
         term: employee_id,
+        relations: true,
       });
 
       const result = await createResult(
@@ -60,6 +61,7 @@ export class BondsService {
             description_id: description_bonds,
             type_id: type_bonds,
           },
+          employmentRecord: employmentRecord[0],
         },
         BondHasEmployee,
       );
@@ -80,7 +82,9 @@ export class BondsService {
           description_id: true,
           type_id: true,
           bondHasEmployee: {
-            employmentRecord: true,
+            employmentRecord: {
+              employee: true,
+            },
           },
         };
       }
@@ -103,7 +107,9 @@ export class BondsService {
           description_id: true,
           type_id: true,
           bondHasEmployee: {
-            employmentRecord: true,
+            employmentRecord: {
+              employee: true,
+            },
           },
         },
       };
