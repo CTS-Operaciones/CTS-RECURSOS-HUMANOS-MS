@@ -9,9 +9,14 @@ import {
   ErrorManager,
   findOneByTerm,
   msgError,
+  paginationResult,
   updateResult,
 } from '../common';
-import { CreateVacationDto, UpdateVacationDto } from './dto';
+import {
+  CreateVacationDto,
+  FindHistoryByEmployeeDto,
+  UpdateVacationDto,
+} from './dto';
 import { EmployeeService } from '../employee/employee.service';
 import { HolidayService } from '../holiday/holiday.service';
 
@@ -105,6 +110,39 @@ export class VacationService {
       });
 
       return result;
+    } catch (error) {
+      throw ErrorManager.createSignatureError(error);
+    }
+  }
+
+  async findHistoryByEmployee({
+    employee_id,
+    relations,
+    ..._pagination
+  }: FindHistoryByEmployeeDto) {
+    try {
+      const options: FindOneOptions<VacationEntity> = {
+        where: { employmentRecord: { employee: { id: employee_id } } },
+        order: { created_at: 'DESC' },
+      };
+
+      if (relations) {
+        options.relations = {
+          employmentRecord: { employee: true },
+        };
+      }
+
+      const pagination = {
+        ..._pagination,
+        options,
+      };
+
+      const vacationHistory = await paginationResult(
+        this.vacationRepository,
+        pagination,
+      );
+
+      return vacationHistory;
     } catch (error) {
       throw ErrorManager.createSignatureError(error);
     }

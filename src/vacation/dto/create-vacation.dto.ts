@@ -1,4 +1,5 @@
 import {
+  IsBoolean,
   IsDate,
   IsEnum,
   IsNotEmpty,
@@ -7,9 +8,10 @@ import {
   IsPositive,
   IsString,
 } from 'class-validator';
-import { STATUS_VACATIONS_PERMISSION } from 'cts-entities';
+import { Type } from 'class-transformer';
+import { STATUS_VACATIONS_PERMISSION, ToBoolean } from 'cts-entities';
 
-import { ICreateVacation } from '../../common';
+import { ICreateVacation, PaginationRelationsDto } from '../../common';
 
 export class CreateVacationDto implements ICreateVacation {
   @IsNumber()
@@ -41,4 +43,17 @@ export class CreateVacationDto implements ICreateVacation {
   @IsString()
   @IsOptional()
   comment?: string;
+}
+
+export class FindHistoryByEmployeeDto extends PaginationRelationsDto {
+  @IsNumber()
+  @IsPositive()
+  @IsNotEmpty()
+  employee_id: number;
+
+  @IsOptional()
+  @IsBoolean()
+  @Type(() => Boolean)
+  @ToBoolean('relations')
+  relations?: boolean = false;
 }
