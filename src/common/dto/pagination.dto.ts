@@ -75,7 +75,7 @@ export class FilterEnumsDto<T> extends PaginationFilterStatusEmployeeDto<T> {
 
   @IsEnum([...Object.values(GENDER)])
   @IsOptional()
-  gener?: T extends { blood: infer U } ? U : never;
+  gender?: T extends { blood: infer U } ? U : never;
 
   @IsEnum([...Object.values(STATUS_CIVIL)])
   @IsOptional()

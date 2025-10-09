@@ -257,7 +257,7 @@ export class EmployeeService {
         bonds,
         account,
         nacionality,
-        gener,
+        gender,
         blood,
         statusCivil,
         presence,
@@ -421,7 +421,7 @@ export class EmployeeService {
       const filters: Record<string, any> = {
         status,
         nacionality,
-        gener,
+        gender,
         blood,
         statusCivil,
       };
