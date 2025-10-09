@@ -112,3 +112,16 @@ export class FilterDateDto extends PaginationRelationsDto {
   @Type(() => Date)
   endDate?: Date;
 }
+
+export class FindHistoryByEmployeeDto extends PaginationRelationsDto {
+  @IsNumber()
+  @IsPositive()
+  @IsNotEmpty()
+  employee_id: number;
+
+  @IsOptional()
+  @IsBoolean()
+  @Type(() => Boolean)
+  @ToBoolean('relations')
+  relations?: boolean = false;
+}

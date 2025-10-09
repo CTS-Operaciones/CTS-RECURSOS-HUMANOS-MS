@@ -19,6 +19,7 @@ import {
   AddJustificationDto,
   CreateAttendancePermissionDto,
   FilterDateDto,
+  FindHistoryByEmployeeDto,
   SetStatusOfPermissionDto,
   UpdateAttendancePermissionDto,
 } from './dto';
@@ -220,6 +221,41 @@ export class AttendancePermissionService {
     }
   }
 
+  async findHistoryByEmployee({
+    employee_id,
+    relations,
+    ..._pagination
+  }: FindHistoryByEmployeeDto) {
+    try {
+      const options: FindManyOptions<AttendancePermission> = {
+        where: { employees: { employee: { id: employee_id } } },
+        order: { created_at: 'DESC' },
+      };
+
+      if (relations) {
+        options.relations = {
+          employees: {
+            employee: true,
+          },
+        };
+      }
+
+      const pagination = {
+        ..._pagination,
+        options,
+      };
+
+      const permissionHistory = await paginationResult(
+        this.attendancePermissionRepository,
+        pagination,
+      );
+
+      return permissionHistory;
+    } catch (error) {
+      throw ErrorManager.createSignatureError(error);
+    }
+  }
+
   async findOne(id: number, relations: boolean = false) {
     try {
       const options: FindOneOptions<AttendancePermission> = {};
@@ -227,7 +263,7 @@ export class AttendancePermissionService {
       if (relations) {
         options.relations = {
           employees: {
-            employee: true
+            employee: true,
           },
         };
       }

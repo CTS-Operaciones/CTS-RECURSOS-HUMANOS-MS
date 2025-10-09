@@ -6,6 +6,7 @@ import {
   AddJustificationDto,
   CreateAttendancePermissionDto,
   FilterDateDto,
+  FindHistoryByEmployeeDto,
   SetStatusOfPermissionDto,
   UpdateAttendancePermissionDto,
 } from './dto';
@@ -39,6 +40,11 @@ export class AttendancePermissionController {
   @MessagePattern('attendancePermission.findAll')
   findAll(@Payload() pagination: FilterDateDto) {
     return this.attendancePermissionService.findAll(pagination);
+  }
+
+  @MessagePattern('attendancePermission.findHistoryByEmployee')
+  findHistoryByEmployee(@Payload() payload: FindHistoryByEmployeeDto) {
+    return this.attendancePermissionService.findHistoryByEmployee(payload);
   }
 
   @MessagePattern('attendancePermission.findOne')

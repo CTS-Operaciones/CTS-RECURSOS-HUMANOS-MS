@@ -10,7 +10,9 @@ export async function paginationResult<T extends ObjectLiteral>(
 
   const _options: FindManyOptions<T> = {
     ...options,
-    order: { id: 'ASC' } as unknown as FindManyOptions<T>['order'],
+    order:
+      options.order ??
+      ({ id: 'ASC' } as unknown as FindManyOptions<T>['order']),
   };
 
   if (!all) {
