@@ -179,9 +179,11 @@ export class VacationService {
 
     const holidays = await this.holidayService.findAll({ all: true });
 
-    const holidayDates = holidays.data.map(
-      (h) => h.holiday_date.toISOString().split('T')[0],
-    );
+    const holidayDates = holidays.data.map((h) => {
+      return typeof h.holiday_date === 'string'
+        ? h.holiday_date
+        : h.holiday_date.toISOString().split('T')[0];
+    });
 
     while (current <= end) {
       const currentDateStr = current.toISOString().split('T')[0];
