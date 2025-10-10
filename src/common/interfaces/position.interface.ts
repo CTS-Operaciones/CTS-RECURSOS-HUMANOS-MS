@@ -9,4 +9,5 @@ export interface IPosition {
 export interface ICreatePosition extends Omit<IPosition, 'parent'> {
   department_id?: number;
   parent?: number;
+  required_boss?: boolean;
 }

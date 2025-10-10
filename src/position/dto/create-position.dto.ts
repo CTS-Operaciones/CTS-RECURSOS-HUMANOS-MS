@@ -1,4 +1,5 @@
 import {
+  IsBoolean,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -9,6 +10,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { ToBoolean } from 'cts-entities';
 
 import { ICreatePosition, ISalary } from '../../common';
 
@@ -45,4 +47,11 @@ export class CreatePositionDto implements ICreatePosition {
   @IsPositive()
   @IsOptional()
   parent?: number;
+
+  @IsOptional()
+  @IsNotEmpty()
+  @IsBoolean()
+  @Type(() => Boolean)
+  @ToBoolean('required_boss')
+  required_boss?: boolean = false;
 }

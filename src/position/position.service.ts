@@ -51,6 +51,7 @@ export class PositionService {
         salary,
         department_id,
         parent = undefined,
+        required_boss = false,
         ...payload
       } = createPositionDto;
       const { salary_in_words, amount } = salary;
@@ -91,6 +92,7 @@ export class PositionService {
           {
             ...payload,
             salary: salaryCrated,
+            requiredBoss: required_boss,
           },
           PositionEntity,
           queryRunner,
