@@ -10,7 +10,7 @@ import {
   SetStatusOfPermissionDto,
   UpdateAttendancePermissionDto,
 } from './dto';
-import { PaginationRelationsDto } from 'src/common';
+import { RelationsDto } from '../common';
 
 @Controller()
 export class AttendancePermissionController {
@@ -48,8 +48,10 @@ export class AttendancePermissionController {
   }
 
   @MessagePattern('attendancePermission.findOne')
-  findOne(@Payload() { id }: { id: number }) {
-    return this.attendancePermissionService.findOne(id);
+  findOne(
+    @Payload() { id, relations }: { id: number; relations: RelationsDto },
+  ) {
+    return this.attendancePermissionService.findOne(id, relations.relations);
   }
 
   @MessagePattern('attendancePermission.update')
