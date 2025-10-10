@@ -285,7 +285,8 @@ export class PositionService {
   async update({ id, ...updatePositionDto }: UpdatePositionDto) {
     try {
       return runInTransaction(this.dataSource, async (queryRunner) => {
-        const { name, salary, department_id, parent } = updatePositionDto;
+        const { name, salary, department_id, parent, required_boss } =
+          updatePositionDto;
 
         const {
           department,
@@ -312,6 +313,11 @@ export class PositionService {
             term: parent,
           });
         }
+
+        position['requiredBoss'] =
+          required_boss !== undefined
+            ? required_boss
+            : position['requiredBoss'];
 
         Object.assign(position, {
           name,
