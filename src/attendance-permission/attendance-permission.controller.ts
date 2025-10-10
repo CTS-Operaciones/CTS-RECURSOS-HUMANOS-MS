@@ -48,7 +48,7 @@ export class AttendancePermissionController {
   }
 
   @MessagePattern('attendancePermission.findOne')
-  findOne(@Payload() id: number) {
+  findOne(@Payload() { id }: { id: number }) {
     return this.attendancePermissionService.findOne(id);
   }
 
