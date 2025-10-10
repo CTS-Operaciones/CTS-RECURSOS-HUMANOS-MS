@@ -7,6 +7,7 @@ import {
   IsOptional,
   IsPositive,
   IsString,
+  Min,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { STATUS_VACATIONS_PERMISSION, ToBoolean } from 'cts-entities';
@@ -29,7 +30,7 @@ export class CreateVacationDto implements ICreateVacation {
 
   @IsNumber()
   @IsNotEmpty()
-  @IsPositive()
+  @Min(0)
   requested_day: number;
 
   @IsEnum(STATUS_VACATIONS_PERMISSION)
