@@ -206,7 +206,9 @@ export class AttendancePermissionService {
 
       if (relations) {
         options.relations = {
-          employees: true,
+          employees: {
+            employee: true,
+          },
         };
       }
 
