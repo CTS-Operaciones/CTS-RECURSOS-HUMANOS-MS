@@ -30,6 +30,7 @@ import {
   paginationResult,
   restoreResult,
   runInTransaction,
+  updateResult,
 } from '../common';
 
 @Injectable()
@@ -295,6 +296,10 @@ export class PositionService {
           ...position
         } = await this.findOne({ term: id, relations: true });
 
+        if (name && name !== position.name) {
+          position['name'] = name;
+        }
+
         if (department_id && department.id !== department_id) {
           position['department'] = await this.departmentService.findOneByTerm({
             term: department_id,
@@ -318,10 +323,6 @@ export class PositionService {
           required_boss !== undefined
             ? required_boss
             : position['requiredBoss'];
-
-        Object.assign(position, {
-          name,
-        });
 
         const result = await createResult(
           this.positionRepo,
