@@ -1,4 +1,6 @@
 import {
+  ArrayNotEmpty,
+  IsArray,
   IsBoolean,
   IsDate,
   IsEnum,
@@ -8,11 +10,26 @@ import {
   IsPositive,
   IsString,
   Min,
+  ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { STATUS_VACATIONS_PERMISSION, ToBoolean } from 'cts-entities';
 
-import { ICreateVacation, PaginationRelationsDto } from '../../common';
+import {
+  ICreateVacation,
+  IDatesRange,
+  PaginationRelationsDto,
+} from '../../common';
+
+export class DatesRangeDto implements IDatesRange {
+  @IsNotEmpty()
+  @IsDate()
+  start: Date;
+
+  @IsNotEmpty()
+  @IsDate()
+  end: Date;
+}
 
 export class CreateVacationDto implements ICreateVacation {
   @IsNumber()
@@ -20,13 +37,11 @@ export class CreateVacationDto implements ICreateVacation {
   @IsPositive()
   employee: number;
 
-  @IsNotEmpty()
-  @IsDate()
-  startDate: Date;
-
-  @IsNotEmpty()
-  @IsDate()
-  endDate: Date;
+  @IsArray()
+  @ArrayNotEmpty()
+  @ValidateNested({ each: true })
+  @Type(() => DatesRangeDto)
+  dateRange: DatesRangeDto[];
 
   @IsNumber()
   @IsNotEmpty()

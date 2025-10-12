@@ -14,6 +14,7 @@ import {
 } from '../common';
 import {
   CreateVacationDto,
+  DatesRangeDto,
   FindHistoryByEmployeeDto,
   UpdateVacationDto,
 } from './dto';
@@ -33,8 +34,7 @@ export class VacationService {
     try {
       const {
         employee,
-        endDate,
-        startDate,
+        dateRange,
         requested_day,
         status,
         comment = undefined,
@@ -54,10 +54,7 @@ export class VacationService {
         });
       }
 
-      const daysRequested = await this.calculateBusinessDays(
-        startDate,
-        endDate,
-      );
+      const daysRequested = await this.calculateBusinessDays(dateRange);
 
       if (daysRequested > activeContract.vacations_days!) {
         throw new ErrorManager({
@@ -77,9 +74,8 @@ export class VacationService {
         this.vacationRepository,
         {
           employmentRecord: activeContract,
-          endDate,
-          startDate,
-          requested_day,
+          rangeDates: dateRange,
+          requested_day: daysRequested,
           status,
           comment,
           reason,
@@ -173,27 +169,35 @@ export class VacationService {
     }
   }
 
-  private async calculateBusinessDays(start: Date, end: Date) {
-    let count = 0;
-    const current = new Date(start);
+  private async calculateBusinessDays(
+    dateRange: DatesRangeDto | DatesRangeDto[],
+  ): Promise<number> {
+    const dateRanges = Array.isArray(ranges) ? ranges : [ranges];
+
+    let totalBusinessDays = 0;
 
     const holidays = await this.holidayService.findAll({ all: true });
-
-    const holidayDates = holidays.data.map((h) => {
-      return typeof h.holiday_date === 'string'
+    const holidayDates = holidays.data.map((h) =>
+      typeof h.holiday_date === 'string'
         ? h.holiday_date
-        : h.holiday_date.toISOString().split('T')[0];
-    });
+        : h.holiday_date.toISOString().split('T')[0],
+    );
 
-    while (current <= end) {
-      const currentDateStr = current.toISOString().split('T')[0];
-      const day = current.getDay();
-      if (day !== 0 && day !== 6 && !holidayDates.includes(currentDateStr)) {
-        count++;
+    for (const range of dateRanges) {
+      const { start, end } = range;
+      const current = new Date(start);
+
+      while (current <= end) {
+        const currentDateStr = current.toISOString().split('T')[0];
+        const day = current.getDay();
+
+        if (day !== 0 && day !== 6 && !holidayDates.includes(currentDateStr)) {
+          totalBusinessDays++;
+        }
+        current.setDate(current.getDate() + 1);
       }
-      current.setDate(current.getDate() + 1);
     }
 
-    return count;
+    return totalBusinessDays;
   }
 }
