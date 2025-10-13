@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOneOptions, Repository } from 'typeorm';
-import { VacationEntity } from 'cts-entities';
+import { STATUS_VACATIONS_PERMISSION, VacationEntity } from 'cts-entities';
 
 import {
   createResult,
@@ -16,6 +16,7 @@ import {
   CreateVacationDto,
   DatesRangeDto,
   FindHistoryByEmployeeDto,
+  SetStatusOfVacationDto,
   UpdateVacationDto,
 } from './dto';
 import { EmployeeService } from '../employee/employee.service';
@@ -82,6 +83,21 @@ export class VacationService {
         },
         VacationEntity,
       );
+
+      return result;
+    } catch (error) {
+      throw ErrorManager.createSignatureError(error);
+    }
+  }
+
+  async setStatusOfVacation(payload: SetStatusOfVacationDto) {
+    try {
+      const { id, status } = payload;
+      const vacation = await this.findOne(id);
+
+      Object.assign(vacation, { status });
+
+      const result = await updateResult(this.vacationRepository, id, vacation);
 
       return result;
     } catch (error) {

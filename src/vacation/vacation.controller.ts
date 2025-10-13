@@ -2,7 +2,11 @@ import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 
 import { VacationService } from './vacation.service';
-import { CreateVacationDto, UpdateVacationDto } from './dto';
+import {
+  CreateVacationDto,
+  SetStatusOfVacationDto,
+  UpdateVacationDto,
+} from './dto';
 
 @Controller({ path: 'vacation', version: '1' })
 export class VacationController {
@@ -11,6 +15,11 @@ export class VacationController {
   @MessagePattern('vacation.create')
   async create(@Payload() createVacationDto: CreateVacationDto) {
     return await this.vacationService.create(createVacationDto);
+  }
+
+  @MessagePattern('vacation.setStatusOfVacation')
+  async setStatusOfVacation(@Payload() payload: SetStatusOfVacationDto) {
+    return await this.vacationService.setStatusOfVacation(payload);
   }
 
   @MessagePattern('vacation.findHistoryByEmployee')

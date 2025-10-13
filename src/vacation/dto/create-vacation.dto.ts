@@ -61,6 +61,17 @@ export class CreateVacationDto implements ICreateVacation {
   comment?: string;
 }
 
+export class SetStatusOfVacationDto {
+  @IsNumber()
+  @IsPositive()
+  @IsNotEmpty()
+  id: number;
+
+  @IsEnum(STATUS_VACATIONS_PERMISSION)
+  @IsNotEmpty()
+  status: STATUS_VACATIONS_PERMISSION;
+}
+
 export class FindHistoryByEmployeeDto extends PaginationRelationsDto {
   @IsNumber()
   @IsPositive()
