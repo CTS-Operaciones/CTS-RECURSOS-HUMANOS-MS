@@ -4,9 +4,11 @@ import { MessagePattern, Payload } from '@nestjs/microservices';
 import { VacationService } from './vacation.service';
 import {
   CreateVacationDto,
+  FindHistoryByEmployeeDto,
   SetStatusOfVacationDto,
   UpdateVacationDto,
 } from './dto';
+import { RelationsDto } from '../common';
 
 @Controller({ path: 'vacation', version: '1' })
 export class VacationController {
@@ -23,13 +25,15 @@ export class VacationController {
   }
 
   @MessagePattern('vacation.findHistoryByEmployee')
-  async findHistoryByEmployee(@Payload() dto: any) {
+  async findHistoryByEmployee(@Payload() dto: FindHistoryByEmployeeDto) {
     return await this.vacationService.findHistoryByEmployee(dto);
   }
 
   @MessagePattern('vacation.findOne')
-  async findOne(@Payload() { id }: { id: number }) {
-    return await this.vacationService.findOne(id);
+  async findOne(
+    @Payload() { id, relations }: { id: number; relations: RelationsDto },
+  ) {
+    return await this.vacationService.findOne(id, relations.relations);
   }
 
   @MessagePattern('vacation.update')
