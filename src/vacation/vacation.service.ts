@@ -172,7 +172,7 @@ export class VacationService {
   private async calculateBusinessDays(
     dateRange: DatesRangeDto | DatesRangeDto[],
   ): Promise<number> {
-    const dateRanges = Array.isArray(ranges) ? ranges : [ranges];
+    const dateRanges = Array.isArray(dateRange) ? dateRange : [dateRange];
 
     let totalBusinessDays = 0;
 
