@@ -44,8 +44,9 @@ class EmergencyContactDto implements IEmergencyContact {
   @IsString()
   relationship: string;
 
+  @IsString()
+  @IsPhoneNumber('MX')
   @IsNotEmpty()
-  @IsPhoneNumber()
   phone: string;
 }
 
