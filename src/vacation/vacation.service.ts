@@ -162,9 +162,24 @@ export class VacationService {
 
   async update(updateVacationDto: UpdateVacationDto) {
     try {
-      const { id, employee: _, ...rest } = updateVacationDto;
+      const { id, employee: _, dateRange, ...rest } = updateVacationDto;
 
       const vacation = await this.findOne(id, false);
+
+      if (dateRange) {
+        vacation.rangeDates = dateRange;
+        vacation.requested_day = await this.calculateBusinessDays(dateRange);
+      }
+
+      if (vacation.status === STATUS_VACATIONS_PERMISSION.APPROVED) {
+        throw new ErrorManager({
+          code: 'BAD_REQUEST',
+          message: msgError(
+            'MSG',
+            'No se puede modificar una solicitud aprobada',
+          ),
+        });
+      }
 
       Object.assign(vacation, rest);
 
