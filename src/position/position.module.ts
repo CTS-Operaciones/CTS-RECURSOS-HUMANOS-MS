@@ -1,13 +1,17 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { PositionEntity, SalaryEntity } from 'cts-entities';
+import {
+  HeadquartersPositionQuota,
+  PositionEntity,
+  SalaryEntity,
+} from 'cts-entities';
 
 import { PositionService } from './position.service';
 import { PositionController } from './position.controller';
 
 import { DepartmentModule } from '../department/department.module';
 
-const entities = [PositionEntity, SalaryEntity];
+const entities = [PositionEntity, SalaryEntity, HeadquartersPositionQuota];
 
 const servicesImport = [DepartmentModule];
 

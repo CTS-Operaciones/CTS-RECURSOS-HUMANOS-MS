@@ -27,6 +27,11 @@ export class PositionController {
     return this.positionsService.findAll(pagination);
   }
 
+  @MessagePattern('position.find-all-by-headquarterQuota')
+  getPositionsByHeadquarterId(@Payload() { id }: { id: number }) {
+    return this.positionsService.getPositionsByHeadquarter(id);
+  }
+
   @MessagePattern('find-one-position')
   findOne(@Payload() findOneRelationsDto: FindOneWhitTermAndRelationDto) {
     return this.positionsService.findOne(findOneRelationsDto);

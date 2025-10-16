@@ -1,6 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { PositionEntity, SalaryEntity, DepartmentEntity } from 'cts-entities';
+import {
+  PositionEntity,
+  SalaryEntity,
+  DepartmentEntity,
+  HeadquartersPositionQuota,
+  EmployeeHasPositions,
+  StaffEntity,
+} from 'cts-entities';
 import {
   DataSource,
   FindManyOptions,
@@ -16,6 +23,7 @@ import {
 import { DepartmentService } from '../department/department.service';
 import { CreatePositionDto, UpdatePositionDto } from './dto';
 import {
+  col,
   createResult,
   deleteResult,
   ErrorManager,
@@ -30,7 +38,6 @@ import {
   paginationResult,
   restoreResult,
   runInTransaction,
-  updateResult,
 } from '../common';
 
 @Injectable()
@@ -44,6 +51,8 @@ export class PositionService {
     private readonly salaryRepository: Repository<SalaryEntity>,
     private readonly dataSource: DataSource,
     private readonly departmentService: DepartmentService,
+    @InjectRepository(HeadquartersPositionQuota)
+    private readonly headquartersPositionQuotaRepository: Repository<HeadquartersPositionQuota>,
   ) {}
 
   async create(createPositionDto: CreatePositionDto) {
@@ -138,6 +147,64 @@ export class PositionService {
     } catch (error) {
       throw ErrorManager.createSignatureError(error);
     }
+  }
+
+  async getPositionsByHeadquarter(hqId: number) {
+    const positionAlias = 'position',
+      employeeHasPositionAlias = 'ehp',
+      staffAlias = 'staff';
+
+    const quotas = await this.headquartersPositionQuotaRepository.find({
+      select: { id: true, position_id: true, max_employee: true },
+      where: { headquarters: { id: hqId } },
+    });
+
+    const positionIds = quotas.map((q) => q.position_id);
+
+    if (positionIds.length === 0) return [];
+
+    const positionsWithStaff = await this.positionRepo
+      .createQueryBuilder(positionAlias)
+      .leftJoin(
+        col<PositionEntity>(positionAlias, 'employeeHasPosition'),
+        employeeHasPositionAlias,
+      )
+      .leftJoin(
+        col<EmployeeHasPositions>(employeeHasPositionAlias, 'staff'),
+        staffAlias,
+        `${col<StaffEntity>(staffAlias, 'headquarter')} = :hqId`,
+        { hqId },
+      )
+      .select([
+        col<PositionEntity>(positionAlias, 'id'),
+        col<PositionEntity>(positionAlias, 'name'),
+        col<PositionEntity>(positionAlias, 'parent'),
+        `COUNT(${col<StaffEntity>(staffAlias, 'id')}) > 0 AS "hasStaff"`,
+      ])
+      .whereInIds(positionIds)
+      .groupBy(col<PositionEntity>(positionAlias, 'id'))
+      .getRawMany();
+
+    const positionIdSet = new Set(positionIds);
+    const parentHasStaffMap = new Map<number, boolean>();
+    positionsWithStaff.forEach((p) => {
+      parentHasStaffMap.set(p.position_id, p.hasStaff);
+    });
+
+    return positionsWithStaff.map((p) => {
+      const validParentId =
+        p.parentId && positionIdSet.has(p.parentId) ? p.parentId : null;
+
+      return {
+        id: p.position_id,
+        name: p.position_name,
+        parentId: validParentId,
+        hasStaff: p.hasStaff,
+        visible: validParentId
+          ? parentHasStaffMap.get(validParentId) || false
+          : true, // visible solo si parent válido tiene staff
+      };
+    });
   }
 
   async findAllPlainresponse(pagination: PaginationRelationsDto) {
