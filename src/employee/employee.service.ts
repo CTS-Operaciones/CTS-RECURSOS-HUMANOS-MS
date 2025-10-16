@@ -386,7 +386,6 @@ export class EmployeeService {
           path: col<PositionEntity>(positionAlias, 'department'),
           alias: deparmentAlias,
         },
-
         {
           flag: joinAll || vacation,
           path: col<EmploymentRecordEntity>(employmentRecordAlias, 'vacations'),
@@ -435,6 +434,21 @@ export class EmployeeService {
         }
       });
 
+      if ((!joinAll || !position) && (department_id || position_id)) {
+        employeesQuery
+          .innerJoin(
+            col<EmploymentRecordEntity>(
+              employmentRecordAlias,
+              'employeeHasPosition',
+            ),
+            employeeHasPositionAlias,
+          )
+          .innerJoin(
+            col<EmployeeHasPositions>(employeeHasPositionAlias, 'position_id'),
+            positionAlias,
+          );
+      }
+
       if (department_id && department_id > 0) {
         employeesQuery.andWhere(
           `${col<PositionEntity>(positionAlias, 'department')} = :department_id`,
@@ -447,9 +461,7 @@ export class EmployeeService {
       if (position_id && position_id > 0) {
         employeesQuery.andWhere(
           `${col<PositionEntity>(positionAlias, 'id')} = :position_id`,
-          {
-            position_id,
-          },
+          { position_id },
         );
       }
 
@@ -471,7 +483,7 @@ export class EmployeeService {
       }
 
       if (status) {
-        employeesQuery.where(
+        employeesQuery.andWhere(
           `${col<EmployeeEntity>(employeeAlias, 'status')} = :status`,
           {
             status,
