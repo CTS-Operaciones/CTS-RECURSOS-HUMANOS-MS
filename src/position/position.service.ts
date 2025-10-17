@@ -21,7 +21,7 @@ import {
 } from 'typeorm';
 
 import { DepartmentService } from '../department/department.service';
-import { CreatePositionDto, UpdatePositionDto } from './dto';
+import { CreatePositionDto, FilterPositionDto, UpdatePositionDto } from './dto';
 import {
   col,
   createResult,
@@ -207,9 +207,9 @@ export class PositionService {
     });
   }
 
-  async findAllPlainresponse(pagination: PaginationRelationsDto) {
+  async findAllPlainresponse(pagination: FilterPositionDto) {
     try {
-      const { relations, ..._pagination } = pagination;
+      const { isExternal, relations, ..._pagination } = pagination;
       const options: FindManyOptions<PositionEntity> = {};
 
       if (relations) {
@@ -217,6 +217,10 @@ export class PositionService {
           department: true,
           salary: true,
         };
+      }
+
+      if (isExternal) {
+        options.where = { isExternal: isExternal };
       }
 
       const positions = await paginationResult(this.positionRepository, {

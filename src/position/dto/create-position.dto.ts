@@ -54,4 +54,11 @@ export class CreatePositionDto implements ICreatePosition {
   @Type(() => Boolean)
   @ToBoolean('required_boss')
   required_boss?: boolean = false;
+
+  @IsOptional()
+  @IsNotEmpty()
+  @IsBoolean()
+  @Type(() => Boolean)
+  @ToBoolean('isExternal')
+  isExternal?: boolean = false;
 }

@@ -1,12 +1,9 @@
-import { Controller, ParseIntPipe } from '@nestjs/common';
+import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 
 import { PositionService } from './position.service';
-import { CreatePositionDto, UpdatePositionDto } from './dto';
-import {
-  FindOneWhitTermAndRelationDto,
-  PaginationRelationsDto,
-} from '../common';
+import { CreatePositionDto, FilterPositionDto, UpdatePositionDto } from './dto';
+import { FindOneWhitTermAndRelationDto } from '../common';
 
 @Controller({ path: 'position', version: '1' })
 export class PositionController {
@@ -18,12 +15,12 @@ export class PositionController {
   }
 
   @MessagePattern('find-all-positions-plainformat')
-  findAllPlainFormat(@Payload() pagination: PaginationRelationsDto) {
+  findAllPlainFormat(@Payload() pagination: FilterPositionDto) {
     return this.positionsService.findAllPlainresponse(pagination);
   }
 
   @MessagePattern('find-all-positions')
-  findAll(@Payload() pagination: PaginationRelationsDto) {
+  findAll(@Payload() pagination: FilterPositionDto) {
     return this.positionsService.findAll(pagination);
   }
 
