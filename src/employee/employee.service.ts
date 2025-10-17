@@ -321,7 +321,13 @@ export class EmployeeService {
           alias: employmentRecordAlias,
         },
         {
-          flag: joinAll || presence || position || staff,
+          flag:
+            joinAll ||
+            presence ||
+            position ||
+            staff ||
+            position_id ||
+            department_id,
           path: col<EmploymentRecordEntity>(
             employmentRecordAlias,
             'employeeHasPosition',
@@ -369,7 +375,7 @@ export class EmployeeService {
           alias: emailAlias,
         },
         {
-          flag: joinAll || position,
+          flag: joinAll || position || position_id || department_id,
           path: col<EmployeeHasPositions>(
             employeeHasPositionAlias,
             'position_id',
@@ -377,12 +383,12 @@ export class EmployeeService {
           alias: positionAlias,
         },
         {
-          flag: joinAll || position,
+          flag: joinAll || position || position_id || department_id,
           path: col<PositionEntity>(positionAlias, 'salary'),
           alias: salaryAlias,
         },
         {
-          flag: joinAll || position,
+          flag: joinAll || position || position_id || department_id,
           path: col<PositionEntity>(positionAlias, 'department'),
           alias: deparmentAlias,
         },
@@ -433,21 +439,6 @@ export class EmployeeService {
           );
         }
       });
-
-      if ((!joinAll || !position) && (department_id || position_id)) {
-        employeesQuery
-          .innerJoin(
-            col<EmploymentRecordEntity>(
-              employmentRecordAlias,
-              'employeeHasPosition',
-            ),
-            employeeHasPositionAlias,
-          )
-          .innerJoin(
-            col<EmployeeHasPositions>(employeeHasPositionAlias, 'position_id'),
-            positionAlias,
-          );
-      }
 
       if (department_id && department_id > 0) {
         employeesQuery.andWhere(
