@@ -5,10 +5,13 @@ import { DataSource, FindOneOptions, QueryRunner, Repository } from 'typeorm';
 import {
   EmployeeHasPositions,
   EmploymentRecordEntity,
+  Headquarters,
+  Project,
   StaffEntity,
 } from 'cts-entities';
 
 import {
+  col,
   createResult,
   deleteResult,
   ErrorManager,
@@ -38,7 +41,7 @@ export class EmployeeHasPositionService {
     private readonly positionService: PositionService,
     @Inject(NATS_SERVICE) private readonly clientProxy: ClientProxy,
     private readonly dataSource: DataSource,
-  ) {}
+  ) { }
 
   async create({
     id,
@@ -72,13 +75,13 @@ export class EmployeeHasPositionService {
       const employee_has_position = existEmployeeHasPosition
         ? existEmployeeHasPosition
         : await createResult(
-            this.employeeHasPosition,
-            {
-              position_id: posiiton,
-              employmentRecord,
-            },
-            EmployeeHasPositions,
-          );
+          this.employeeHasPosition,
+          {
+            position_id: posiiton,
+            employmentRecord,
+          },
+          EmployeeHasPositions,
+        );
 
       const staff = await sendAndHandleRpcExceptionPromise(
         this.clientProxy,
@@ -300,6 +303,7 @@ export class EmployeeHasPositionService {
 
   async deletePositions(id: number, queryRunner?: QueryRunner) {
     try {
+      // Verificar si tiene staff con children
       const existStaff = await this.findStaffChildren(id);
 
       if (existStaff.length > 0) {
@@ -312,6 +316,38 @@ export class EmployeeHasPositionService {
         });
       }
 
+      // Verificar si el employeeHasPosition está asignado a un proyecto interno
+      const employeeHasPositionAlias = 'ehp',
+        staffAlias = 'staff',
+        headquarterAlias = 'headquarter',
+        projectAlias = 'project';
+
+      const count = await this.employeeHasPosition
+        .createQueryBuilder(employeeHasPositionAlias)
+        .select(`COUNT(${col<StaffEntity>(staffAlias, 'id')}) as count`)
+        .leftJoin(`${col<EmployeeHasPositions>(employeeHasPositionAlias, 'staff')}`, staffAlias)
+        .leftJoin(
+          `${col<StaffEntity>(staffAlias, 'headquarter')}`,
+          headquarterAlias,
+        )
+        .leftJoin(
+          `${col<Headquarters>(headquarterAlias, 'project')}`,
+          projectAlias,
+        )
+        .where(`${col<EmployeeHasPositions>(employeeHasPositionAlias, 'id')} = :id`, { id })
+        .andWhere(`${col<EmployeeHasPositions>(employeeHasPositionAlias, 'deleted_at')} IS NULL`)
+        .andWhere(`${col<Project>(projectAlias, 'isExternal')} = false`)
+        .getRawOne();
+
+      const hasInternalProjectStaff = count ? parseInt(count.count) > 0 : false;
+
+      // Si tiene staff en proyecto interno, NO eliminar
+      if (hasInternalProjectStaff) {
+        // No eliminar el employeeHasPosition, solo retornar sin error
+        return null;
+      }
+
+      // Solo eliminar si NO tiene staff en proyectos internos
       return await deleteResult(this.employeeHasPosition, id, queryRunner);
     } catch (error) {
       throw ErrorManager.createSignatureError(error);
