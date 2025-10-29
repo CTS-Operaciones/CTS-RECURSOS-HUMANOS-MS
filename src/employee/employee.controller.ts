@@ -6,10 +6,10 @@ import { plainToClass } from 'class-transformer';
 import { EmployeeService } from './employee.service';
 import {
   AddEmploymentRecordDto,
+  BulkUpdateEmployeeHasPositionsDto,
   CreateEmployeeDto,
   CreateEmployeeHasPositionDto,
   CreateEmployeeOnlyDto,
-  EmployeeHasPositionDto,
   FindByBossIdDto,
   UpdateEmployeeContractDto,
   UpdateEmployeeDto,
@@ -96,6 +96,14 @@ export class AsignedPositionsController {
     payload: UpdateEmployeeHasPositionsDto,
   ) {
     return this.employeeHasPostionService.updateEmployeeHasPositions(payload);
+  }
+
+  @MessagePattern('bulk-update-asignedPositions')
+  bulkUpdateEmployeeHasPosition(
+    @Payload()
+    payload: BulkUpdateEmployeeHasPositionsDto,
+  ) {
+    return this.employeeHasPostionService.bulkUpdateEmployeeHasPositions(payload);
   }
 
   @MessagePattern('findByEmployeeId-asignedPositions')

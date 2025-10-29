@@ -1,5 +1,6 @@
 import { OmitType, PartialType } from '@nestjs/mapped-types';
-import { IsNotEmpty, IsNumber, IsPositive } from 'class-validator';
+import { ArrayNotEmpty, IsArray, IsNotEmpty, IsNumber, IsPositive, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 import {
   CreateEmployeeDto,
   EmployeeHasPositionDto,
@@ -29,4 +30,12 @@ export class UpdateEmployeeHasPositionsDto extends EmployeeHasPositionDto {
   @IsPositive()
   @IsNotEmpty()
   id: number;
+}
+
+export class BulkUpdateEmployeeHasPositionsDto {
+  @IsArray()
+  @ArrayNotEmpty()
+  @ValidateNested({ each: true })
+  @Type(() => UpdateEmployeeHasPositionsDto)
+  positions: UpdateEmployeeHasPositionsDto[];
 }

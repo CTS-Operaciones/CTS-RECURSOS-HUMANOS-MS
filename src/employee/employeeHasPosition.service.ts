@@ -27,6 +27,7 @@ import {
 
 import { PositionService } from '../position/position.service';
 import {
+  BulkUpdateEmployeeHasPositionsDto,
   CreateEmployeeHasPositionDto,
   UpdateEmployeeHasPositionsDto,
 } from './dto';
@@ -295,6 +296,99 @@ export class EmployeeHasPositionService {
         );
 
         return { employeeHasPosition };
+      });
+    } catch (error) {
+      throw ErrorManager.createSignatureError(error);
+    }
+  }
+
+  async bulkUpdateEmployeeHasPositions(
+    payload: BulkUpdateEmployeeHasPositionsDto,
+  ) {
+    try {
+
+      const { positions } = payload;
+
+      // Eliminar duplicados basados en el id del employeeHasPosition
+      const uniqueEmployees = Array.from(
+        new Map(positions.map((emp) => [emp.id, emp])).values(),
+      );
+
+      return await runInTransaction(this.dataSource, async (queryRunner) => {
+        const results: any[] = [];
+
+        for (const employeePayload of uniqueEmployees) {
+          // Reutilizar la lógica existente, procesando cada empleado
+          // dentro de la misma transacción
+          const { id, headquarter_id, position_id, parent_id } = employeePayload;
+
+          const { id: _id, ...employeeHasPosition } =
+            await this.verifyEmployeeHasPosition(id, true, true);
+
+          let currentPosition = employeeHasPosition;
+
+          if (employeeHasPosition.position_id.id !== position_id) {
+            const existPosition = await this.employeeHasPosition.findOne({
+              select: { id: true, deleted_at: true },
+              where: {
+                employmentRecord: { id: employeeHasPosition.employmentRecord.id },
+                position_id: { id: position_id },
+              },
+              withDeleted: true,
+            });
+
+            if (existPosition && existPosition.deleted_at !== null) {
+              await this.restorePostion(existPosition.id, queryRunner);
+              await this.deletePositions(_id, queryRunner);
+              currentPosition = existPosition;
+            }
+
+            employeeHasPosition.position_id = await this.positionService.findOne({
+              term: position_id,
+            });
+
+            if (!existPosition || !existPosition.deleted_at) {
+              await this.deletePositions(_id, queryRunner);
+
+              // Nota: El método create está dentro de la transacción global
+              const createResult = await this.create({
+                id: employeeHasPosition.employmentRecord.id,
+                position_id,
+                headquarter_id,
+                parent_id,
+              });
+              results.push(createResult);
+              continue;
+            }
+          }
+
+          if (employeeHasPosition.position_id.id === position_id) {
+            if (
+              currentPosition.staff?.some(
+                (el) => el.headquarter.id === headquarter_id,
+              )
+            ) {
+              // Si ya pertenece a la sede, continuar sin error
+              results.push({ employeeHasPosition });
+              continue;
+            }
+          }
+
+          await sendAndHandleRpcExceptionPromise(
+            this.clientProxy,
+            'updateForChangesInEmployeeHasPositions',
+            {
+              id,
+              headquarter: headquarter_id,
+              employeeHasPositions: id,
+              parent: parent_id,
+            },
+          );
+
+          results.push({ employeeHasPosition });
+        }
+
+        return results;
       });
     } catch (error) {
       throw ErrorManager.createSignatureError(error);
