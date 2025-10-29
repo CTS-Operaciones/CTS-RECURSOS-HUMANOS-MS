@@ -59,10 +59,13 @@ export class DismissalsService {
     try {
       const { employees, reason, date, comment = '' } = createBulkDismissalDto;
 
+      // Eliminar IDs duplicados usando Set
+      const uniqueEmployeeIds = Array.from(new Set(employees));
+
       return await runInTransaction(this.dataSource, async (queryRunner) => {
         const results: EmploymentRecordEntity[] = [];
 
-        for (const employee_id of employees) {
+        for (const employee_id of uniqueEmployeeIds) {
           const { employmentRecord } = await this.employeeService.getItem({
             term: employee_id
           });
@@ -88,11 +91,16 @@ export class DismissalsService {
             });
           }
 
-          // Obtener el registro de empleo actual para actualizarlo
+          // Obtener el registro de empleo activo (date_end IS NULL)
+          // El empleado puede tener múltiples employmentRecords históricos,
+          // pero getItem solo devuelve el activo según el where clause
           const currentEmploymentRecord = employmentRecord[0];
 
           // Actualizar el employment_record con date_end, reason y comment
-          // Esto activa el trigger que marcará el empleado como DISMISSAL
+          // Esto activa el trigger SQL que automáticamente:
+          // - Marca TODAS las employee_has_positions relacionadas como eliminadas
+          // - Marca TODOS los staff relacionados como eliminados
+          // - Cambia el estado del empleado a DISMISSAL
           const result = await createResult(
             this.employmentRecordRepository,
             {
