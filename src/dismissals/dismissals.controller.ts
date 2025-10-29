@@ -2,7 +2,7 @@ import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 
 import { DismissalsService } from './dismissals.service';
-import { CreateDismissalDto, UpdateDismissalDto } from './dto';
+import { CreateBulkDismissalDto, CreateDismissalDto, UpdateDismissalDto } from './dto';
 import { PaginationRelationsDto } from '../common';
 
 @Controller()
@@ -12,6 +12,11 @@ export class DismissalsController {
   @MessagePattern('dismissal.create')
   create(@Payload() createDismissalDto: CreateDismissalDto) {
     return this.dismissalsService.create(createDismissalDto);
+  }
+
+  @MessagePattern('dismissal.createBulk')
+  createBulk(@Payload() createBulkDismissalDto: CreateBulkDismissalDto) {
+    return this.dismissalsService.createBulk(createBulkDismissalDto);
   }
 
   @MessagePattern('dismissal.findAll')

@@ -1,16 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindManyOptions, FindOneOptions, Repository } from 'typeorm';
-import { EmploymentRecordEntity, EmployeeEntity } from 'cts-entities';
+import { DataSource, FindManyOptions, FindOneOptions, Repository } from 'typeorm';
+import { EmploymentRecordEntity, msgError } from 'cts-entities';
 
-import { CreateDismissalDto, UpdateDismissalDto } from './dto';
 import {
   createResult,
   ErrorManager,
   findOneByTerm,
   PaginationRelationsDto,
   paginationResult,
+  runInTransaction,
 } from '../common';
+import { CreateDismissalDto, CreateBulkDismissalDto, UpdateDismissalDto } from './dto';
 import { EmployeeService } from '../employee/employee.service';
 
 @Injectable()
@@ -19,7 +20,8 @@ export class DismissalsService {
     @InjectRepository(EmploymentRecordEntity)
     private readonly employmentRecordRepository: Repository<EmploymentRecordEntity>,
     private readonly employeeService: EmployeeService,
-  ) {}
+    private readonly dataSource: DataSource,
+  ) { }
 
   async create(createDismissalDto: CreateDismissalDto) {
     try {
@@ -48,6 +50,66 @@ export class DismissalsService {
       );
 
       return result;
+    } catch (error) {
+      throw ErrorManager.createSignatureError(error);
+    }
+  }
+
+  async createBulk(createBulkDismissalDto: CreateBulkDismissalDto) {
+    try {
+      const { employees, reason, date, comment = '' } = createBulkDismissalDto;
+
+      return await runInTransaction(this.dataSource, async (queryRunner) => {
+        const results: EmploymentRecordEntity[] = [];
+
+        for (const employee_id of employees) {
+          const { employmentRecord } = await this.employeeService.getItem({
+            term: employee_id
+          });
+
+          if (!employmentRecord || !employmentRecord[0]) {
+            throw new ErrorManager({
+              code: 'NOT_FOUND',
+              message: msgError('NO_WITH_TERM', employee_id),
+            });
+          }
+
+          if (!employmentRecord[0].typeContract) {
+            throw new ErrorManager({
+              code: 'NOT_FOUND',
+              message: msgError('NO_WITH_TERM', employee_id),
+            });
+          }
+
+          if (employmentRecord[0].typeContract.isAutomatic !== false) {
+            throw new ErrorManager({
+              code: 'NOT_ACCEPTABLE',
+              message: msgError('MSG', 'No se puede despedir a un empleado con contrato fijo'),
+            });
+          }
+
+          // Obtener el registro de empleo actual para actualizarlo
+          const currentEmploymentRecord = employmentRecord[0];
+
+          // Actualizar el employment_record con date_end, reason y comment
+          // Esto activa el trigger que marcará el empleado como DISMISSAL
+          const result = await createResult(
+            this.employmentRecordRepository,
+            {
+              ...currentEmploymentRecord,
+              reason,
+              date_end: date,
+              comment,
+            },
+            EmploymentRecordEntity,
+            queryRunner,
+          );
+
+          results.push(result);
+        }
+
+        return results;
+      });
     } catch (error) {
       throw ErrorManager.createSignatureError(error);
     }
