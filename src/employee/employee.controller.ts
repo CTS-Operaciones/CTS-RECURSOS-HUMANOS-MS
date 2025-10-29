@@ -5,8 +5,10 @@ import { plainToClass } from 'class-transformer';
 
 import { EmployeeService } from './employee.service';
 import {
+  AddEmploymentRecordDto,
   CreateEmployeeDto,
   CreateEmployeeHasPositionDto,
+  CreateEmployeeOnlyDto,
   EmployeeHasPositionDto,
   FindByBossIdDto,
   UpdateEmployeeContractDto,
@@ -24,6 +26,16 @@ export class EmployeeController {
   @MessagePattern('create-employee')
   create(@Payload() payload: CreateEmployeeDto) {
     return this.employeeService.createItem(payload);
+  }
+
+  @MessagePattern('employee.create-only-employee')
+  createEmployee(@Payload() payload: CreateEmployeeOnlyDto) {
+    return this.employeeService.create(payload);
+  }
+
+  @MessagePattern('employee.create-employee-contract')
+  addContract(@Payload() payload: AddEmploymentRecordDto) {
+    return this.employeeService.addContract(payload);
   }
 
   @MessagePattern('findAll-employees')

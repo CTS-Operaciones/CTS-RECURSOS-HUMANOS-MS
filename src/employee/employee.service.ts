@@ -28,7 +28,10 @@ import {
 } from 'cts-entities';
 
 import {
+  AddEmploymentRecordDto,
   CreateEmployeeDto,
+  CreateEmployeeOnlyDto,
+  EmploymentRecordDto,
   UpdateEmployeeContractDto,
   UpdateEmployeeDto,
 } from './dto';
@@ -133,14 +136,15 @@ export class EmployeeService {
           );
 
         // Validar el parent
-        const { boss_staff_id, required_boss } = await findMaxAndRegistered({
-          dataSource: this.dataSource,
-          position_id,
-          headquarter_id,
-        });
+        const { boss_staff_id, required_boss, is_external } =
+          await findMaxAndRegistered({
+            dataSource: this.dataSource,
+            position_id,
+            headquarter_id,
+          });
 
         // Validar que si la posicion requiere un jefe y parent existe
-        if (required_boss && !parent_id) {
+        if (required_boss && !parent_id && is_external) {
           throw new ErrorManager({
             code: 'BAD_GATEWAY',
             message: msgError('PARENT_REQUIRED'),
@@ -236,6 +240,116 @@ export class EmployeeService {
         );
 
         return employee;
+      });
+    } catch (error) {
+      throw ErrorManager.createSignatureError(error);
+    }
+  }
+
+  async create(payload: CreateEmployeeOnlyDto) {
+    try {
+      const {
+        names,
+        first_last_name,
+        second_last_name,
+        date_birth,
+        year_old,
+        curp,
+        rfc,
+        nss,
+        ine_number,
+        alergy,
+        nacionality,
+        status,
+        blood_type,
+        gender,
+      } = payload;
+
+      const employee = await createResult(
+        this.employeeRepository,
+        {
+          names,
+          first_last_name,
+          second_last_name,
+          date_birth,
+          year_old,
+          curp,
+          rfc,
+          nss,
+          ine_number,
+          alergy,
+          nacionality,
+          status,
+          blood_type,
+          gender,
+        },
+        EmployeeEntity,
+      );
+
+      return employee;
+    } catch (error) {
+      throw ErrorManager.createSignatureError(error);
+    }
+  }
+
+  async addContract(payload: AddEmploymentRecordDto) {
+    try {
+      return await runInTransaction(this.dataSource, async (queryRunner) => {
+        const {
+          employee_id,
+          date_register,
+          telephone,
+          address,
+          email,
+          emergency_contact,
+          status_civil,
+          bank_id,
+          number_account_bank,
+          typeContract,
+          account,
+        } = payload;
+
+        const employee = await this.getItem({ term: employee_id });
+
+        const bank = bank_id && (await this.bankService.findOne(bank_id));
+
+        const _typeContract = await this.typeContractService.findOne({
+          term: typeContract,
+        });
+
+        const employmentRecord = await createResult(
+          this.employmentRecordRepository,
+          {
+            date_register,
+            telephone,
+            address,
+            email,
+            emergency_contact,
+            status_civil,
+            bank: bank as BankEntity,
+            number_account_bank,
+            typeContract: _typeContract,
+          },
+          EmploymentRecordEntity,
+          queryRunner,
+        );
+
+        if (account.email) {
+          await createResult(
+            this.employeeRepository,
+            {
+              ...employee,
+              email_cts: {
+                email: account.email,
+                required_access: account.register,
+              },
+            },
+            EmployeeEntity,
+            queryRunner,
+          );
+        }
+
+        return employmentRecord;
       });
     } catch (error) {
       throw ErrorManager.createSignatureError(error);

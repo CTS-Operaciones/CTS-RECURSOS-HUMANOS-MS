@@ -33,6 +33,7 @@ import {
   IEmploymentRecordCreate,
   IEmployeeHasPosition,
 } from '../../common/';
+import { OmitType } from '@nestjs/mapped-types';
 
 class EmergencyContactDto implements IEmergencyContact {
   @IsNotEmpty()
@@ -215,4 +216,17 @@ export class CreateEmployeeDto implements IEmployeeCreate {
   @ValidateNested({ each: true })
   @Type(() => EmploymentRecordDto)
   contract: EmploymentRecordDto;
+}
+
+export class CreateEmployeeOnlyDto extends OmitType(CreateEmployeeDto, [
+  'contract',
+]) {}
+
+export class AddEmploymentRecordDto extends OmitType(EmploymentRecordDto, [
+  'employee_has_position',
+]) {
+  @IsNumber()
+  @IsPositive()
+  @IsNotEmpty()
+  employee_id: number;
 }
