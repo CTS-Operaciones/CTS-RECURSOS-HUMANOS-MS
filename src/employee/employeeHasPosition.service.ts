@@ -269,21 +269,31 @@ export class EmployeeHasPositionService {
           }
         }
 
-        if (employeeHasPosition.position_id.id === position_id)
-          if (
-            currentPosition.staff?.some(
-              (el) => el.headquarter.id === headquarter_id,
-            )
-          ) {
-            throw new ErrorManager({
-              code: 'NOT_ACCEPTABLE',
-              message: msgError(
-                'MSG',
-                'El empleado ya pertenece a la sede seleccionada',
-              ),
-            });
-          }
+        // Si el position_id es el mismo, verificar si ya está en la sede objetivo
+        if (employeeHasPosition.position_id.id === position_id) {
+          const hasStaffInTargetHeadquarter = currentPosition.staff?.some(
+            (el) => el.headquarter.id === headquarter_id,
+          );
 
+          // Si ya está en la sede objetivo, solo actualizar el staff si es necesario
+          if (hasStaffInTargetHeadquarter) {
+            // Actualizar el staff para sincronizar el parent si cambió
+            await sendAndHandleRpcExceptionPromise(
+              this.clientProxy,
+              'updateForChangesInEmployeeHasPositions',
+              {
+                id,
+                headquarter: headquarter_id,
+                employeeHasPositions: id,
+                parent: parent_id,
+              },
+            );
+
+            return { employeeHasPosition, alreadyInHeadquarter: true };
+          }
+        }
+
+        // Crear o actualizar staff para la sede objetivo
         await sendAndHandleRpcExceptionPromise(
           this.clientProxy,
           'updateForChangesInEmployeeHasPositions',
@@ -362,19 +372,13 @@ export class EmployeeHasPositionService {
             }
           }
 
-          if (employeeHasPosition.position_id.id === position_id) {
-            if (
-              currentPosition.staff?.some(
-                (el) => el.headquarter.id === headquarter_id,
-              )
-            ) {
-              // Si ya pertenece a la sede, continuar sin error
-              results.push({ employeeHasPosition });
-              continue;
-            }
-          }
-
-          await sendAndHandleRpcExceptionPromise(
+          // Caso: El position_id es el mismo, puede o no cambiar la sede
+          // El microservicio de staffing manejará:
+          // - Eliminar staff de sedes no objetivo (solo proyectos externos)
+          // - Mantener staff de proyectos internos
+          // - Crear staff si no existe en la sede objetivo
+          // - Actualizar parent si es necesario
+          const staffResult = await sendAndHandleRpcExceptionPromise(
             this.clientProxy,
             'updateForChangesInEmployeeHasPositions',
             {
@@ -385,7 +389,7 @@ export class EmployeeHasPositionService {
             },
           );
 
-          results.push({ employeeHasPosition });
+          results.push({ employeeHasPosition, staffResult });
         }
 
         return results;
