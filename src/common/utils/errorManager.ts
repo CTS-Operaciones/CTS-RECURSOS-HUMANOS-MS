@@ -22,6 +22,15 @@ export class ErrorManager extends RpcException {
     }
     const errorCode = error.error ? error.error.code : error.code;
     const errorMessage = error.error ? error.error.message : error.message;
+
+    // Validar que errorMessage existe antes de usar métodos de string
+    if (!errorMessage) {
+      throw new RpcException({
+        message: 'Error desconocido',
+        code: HttpStatus.INTERNAL_SERVER_ERROR,
+      });
+    }
+
     //Errores de validaciones
     if (errorCode && HttpStatus[errorCode]) {
       throw new RpcException({

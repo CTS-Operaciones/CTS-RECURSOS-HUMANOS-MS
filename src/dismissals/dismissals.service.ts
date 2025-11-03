@@ -32,24 +32,51 @@ export class DismissalsService {
         comment = '',
       } = createDismissalDto;
 
-      const { employmentRecord, ...employee } =
-        await this.employeeService.getItem({
+      return await runInTransaction(this.dataSource, async (queryRunner) => {
+        const { employmentRecord } = await this.employeeService.getItem({
           term: employee_id,
-          relations: true,
         });
 
-      Object.assign(employmentRecord, {
-        reason,
-        date_end: date,
+        if (!employmentRecord || !employmentRecord[0]) {
+          throw new ErrorManager({
+            code: 'NOT_FOUND',
+            message: msgError('NO_WITH_TERM', employee_id),
+          });
+        }
+
+        // Verificar que el employmentRecord esté activo (date_end IS NULL)
+        if (employmentRecord[0].date_end !== null) {
+          throw new ErrorManager({
+            code: 'NOT_ACCEPTABLE',
+            message: msgError(
+              'MSG',
+              'El empleado ya tiene un registro de despido activo',
+            ),
+          });
+        }
+
+        // Obtener el registro de empleo activo
+        const currentEmploymentRecord = employmentRecord[0];
+
+        // Actualizar el employment_record con date_end, reason y comment
+        // Esto activa el trigger SQL que automáticamente:
+        // - Marca TODAS las employee_has_positions relacionadas como eliminadas
+        // - Marca TODOS los staff relacionados como eliminados
+        // - Cambia el estado del empleado a DISMISSAL
+        const result = await createResult(
+          this.employmentRecordRepository,
+          {
+            ...currentEmploymentRecord,
+            reason,
+            date_end: date,
+            comment,
+          },
+          EmploymentRecordEntity,
+          queryRunner,
+        );
+
+        return result;
       });
-
-      const result = await createResult(
-        this.employmentRecordRepository,
-        { ...employmentRecord[0], reason, date_end: date, comment },
-        EmploymentRecordEntity,
-      );
-
-      return result;
     } catch (error) {
       throw ErrorManager.createSignatureError(error);
     }

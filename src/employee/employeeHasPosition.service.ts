@@ -330,18 +330,23 @@ export class EmployeeHasPositionService {
         for (const employeePayload of uniqueEmployees) {
           // Reutilizar la lógica existente, procesando cada empleado
           // dentro de la misma transacción
-          const { id, headquarter_id, position_id, parent_id } = employeePayload;
+          const { id, headquarter_id, position_id, parent_id } =
+            employeePayload;
 
           const { id: _id, ...employeeHasPosition } =
             await this.verifyEmployeeHasPosition(id, true, true);
 
           let currentPosition = employeeHasPosition;
+          // Variable para mantener el id correcto del employee_has_position a usar
+          let currentEmployeeHasPositionId = _id;
 
           if (employeeHasPosition.position_id.id !== position_id) {
             const existPosition = await this.employeeHasPosition.findOne({
               select: { id: true, deleted_at: true },
               where: {
-                employmentRecord: { id: employeeHasPosition.employmentRecord.id },
+                employmentRecord: {
+                  id: employeeHasPosition.employmentRecord.id,
+                },
                 position_id: { id: position_id },
               },
               withDeleted: true,
@@ -349,15 +354,49 @@ export class EmployeeHasPositionService {
 
             if (existPosition && existPosition.deleted_at !== null) {
               await this.restorePostion(existPosition.id, queryRunner);
+
+              // Notificar al microservicio de staff antes de eliminar el employee_has_position
+              // para que elimine los staff en sedes diferentes a la nueva (solo proyectos externos)
+              if (headquarter_id) {
+                await sendAndHandleRpcExceptionPromise(
+                  this.clientProxy,
+                  'updateForChangesInEmployeeHasPositions',
+                  {
+                    id: _id,
+                    headquarter: headquarter_id,
+                    employeeHasPositions: _id,
+                    parent: parent_id,
+                  },
+                );
+              }
+
               await this.deletePositions(_id, queryRunner);
               currentPosition = existPosition;
+              // Actualizar el id actual al id de la posición restaurada
+              currentEmployeeHasPositionId = existPosition.id;
             }
 
-            employeeHasPosition.position_id = await this.positionService.findOne({
-              term: position_id,
-            });
+            employeeHasPosition.position_id =
+              await this.positionService.findOne({
+                term: position_id,
+              });
 
             if (!existPosition || !existPosition.deleted_at) {
+              // Notificar al microservicio de staff antes de eliminar el employee_has_position
+              // para que elimine los staff en sedes diferentes a la nueva (solo proyectos externos)
+              if (headquarter_id) {
+                await sendAndHandleRpcExceptionPromise(
+                  this.clientProxy,
+                  'updateForChangesInEmployeeHasPositions',
+                  {
+                    id: _id,
+                    headquarter: headquarter_id,
+                    employeeHasPositions: _id,
+                    parent: parent_id,
+                  },
+                );
+              }
+
               await this.deletePositions(_id, queryRunner);
 
               // Nota: El método create está dentro de la transacción global
@@ -382,9 +421,9 @@ export class EmployeeHasPositionService {
             this.clientProxy,
             'updateForChangesInEmployeeHasPositions',
             {
-              id,
+              id: currentEmployeeHasPositionId,
               headquarter: headquarter_id,
-              employeeHasPositions: id,
+              employeeHasPositions: currentEmployeeHasPositionId,
               parent: parent_id,
             },
           );
