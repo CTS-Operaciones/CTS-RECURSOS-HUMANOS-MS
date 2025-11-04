@@ -13,6 +13,7 @@ import { VacationModule } from './vacation/vacation.module';
 import { AttendancePermissionModule } from './attendance-permission/attendance-permission.module';
 import { DismissalsModule } from './dismissals/dismissals.module';
 import { BondsModule } from './bonds/bonds.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { BondsModule } from './bonds/bonds.module';
     BankModule,
     BondsModule,
     ContractModule,
+    DashboardModule,
     DepartmentModule,
     DismissalsModule,
     DocumentModule,

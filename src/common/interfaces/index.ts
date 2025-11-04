@@ -2,6 +2,7 @@ export * from './attendancePermission.interface';
 export * from './bank.interface';
 export * from './bond.interface';
 export * from './bondHasStaff.interface';
+export * from './dashboard.interface';
 export * from './department.interface';
 export * from './dismissal.interface';
 export * from './document.interface';
