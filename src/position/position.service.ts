@@ -218,7 +218,8 @@ export class PositionService {
 
   async findAllPlainresponse(pagination: FilterPositionDto) {
     try {
-      const { isExternal, relations, ..._pagination } = pagination;
+      const { isExternal, relations, forProductionReport, ..._pagination } =
+        pagination;
       const options: FindManyOptions<PositionEntity> = {};
 
       if (relations) {
@@ -230,6 +231,10 @@ export class PositionService {
 
       if (isExternal) {
         options.where = { isExternal: isExternal };
+      }
+
+      if (forProductionReport) {
+        options.where = { forProductionReport: true };
       }
 
       const positions = await paginationResult(this.positionRepository, {
