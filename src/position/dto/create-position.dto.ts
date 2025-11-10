@@ -49,16 +49,24 @@ export class CreatePositionDto implements ICreatePosition {
   parent?: number;
 
   @IsOptional()
-  @IsNotEmpty()
   @IsBoolean()
   @Type(() => Boolean)
   @ToBoolean('required_boss')
   required_boss?: boolean = false;
 
   @IsOptional()
-  @IsNotEmpty()
   @IsBoolean()
   @Type(() => Boolean)
   @ToBoolean('isExternal')
   isExternal?: boolean = false;
+
+  @IsOptional()
+  @IsBoolean()
+  @Type(() => Boolean)
+  @ToBoolean('forProductionReport')
+  forProductionReport?: boolean = undefined;
+
+  @IsOptional()
+  @IsNumber()
+  processOrder?: number | null = null;
 }

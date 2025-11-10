@@ -2,7 +2,12 @@ import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 
 import { PositionService } from './position.service';
-import { CreatePositionDto, FilterPositionDto, UpdatePositionDto } from './dto';
+import {
+  CreatePositionDto,
+  FilterPositionDto,
+  UpdatePositionDto,
+  UpdateProductionOrderDto,
+} from './dto';
 import { FindOneWhitTermAndRelationDto } from '../common';
 
 @Controller({ path: 'position', version: '1' })
@@ -37,6 +42,11 @@ export class PositionController {
   @MessagePattern('update-position')
   update(@Payload() updatePositionDto: UpdatePositionDto) {
     return this.positionsService.update(updatePositionDto);
+  }
+
+  @MessagePattern('position.update-production-order')
+  updateProductionOrder(@Payload() payload: UpdateProductionOrderDto) {
+    return this.positionsService.updateProductionReportOrder(payload);
   }
 
   @MessagePattern('remove-position')

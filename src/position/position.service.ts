@@ -21,7 +21,12 @@ import {
 } from 'typeorm';
 
 import { DepartmentService } from '../department/department.service';
-import { CreatePositionDto, FilterPositionDto, UpdatePositionDto } from './dto';
+import {
+  CreatePositionDto,
+  FilterPositionDto,
+  UpdatePositionDto,
+  UpdateProductionOrderDto,
+} from './dto';
 import {
   col,
   createResult,
@@ -62,6 +67,8 @@ export class PositionService {
         department_id,
         parent = undefined,
         required_boss = false,
+        forProductionReport = false,
+        processOrder = null,
         ...payload
       } = createPositionDto;
       const { salary_in_words, amount } = salary;
@@ -101,6 +108,8 @@ export class PositionService {
           this.positionRepo,
           {
             ...payload,
+            forProductionReport,
+            processOrder: processOrder ?? undefined,
             salary: salaryCrated,
             requiredBoss: required_boss,
           },
@@ -349,6 +358,65 @@ export class PositionService {
       }
 
       return positions;
+    } catch (error) {
+      throw ErrorManager.createSignatureError(error);
+    }
+  }
+
+  async updateProductionReportOrder({
+    positions,
+  }: UpdateProductionOrderDto): Promise<PositionEntity[]> {
+    try {
+      const orders = positions.map((item) => item.processOrder);
+      const positionIds = positions.map((item) => item.positionId);
+
+      const hasDuplicatedOrders = orders.length !== new Set(orders).size;
+      if (hasDuplicatedOrders) {
+        throw new ErrorManager({
+          code: 'BAD_REQUEST',
+          message: msgError(
+            'MSG',
+            'El orden de producción no puede tener valores repetidos',
+          ),
+        });
+      }
+
+      const hasDuplicatedIds = positionIds.length !== new Set(positionIds).size;
+      if (hasDuplicatedIds) {
+        throw new ErrorManager({
+          code: 'BAD_REQUEST',
+          message: msgError('MSG', 'Existen posiciones duplicadas en la lista'),
+        });
+      }
+
+      const positionsToUpdate = await this.positionRepository.find({
+        where: { id: In(positionIds), forProductionReport: true },
+      });
+
+      if (positionsToUpdate.length !== positionIds.length) {
+        throw new ErrorManager({
+          code: 'NOT_FOUND',
+          message: msgError(
+            'MSG',
+            'Alguna posición no existe o no está habilitada para el reporte de producción',
+          ),
+        });
+      }
+
+      return runInTransaction(this.dataSource, async (queryRunner) => {
+        for (const { positionId, processOrder } of positions) {
+          await queryRunner.manager.update(
+            PositionEntity,
+            { id: positionId },
+            { processOrder },
+          );
+        }
+
+        return queryRunner.manager.find(PositionEntity, {
+          where: { id: In(positionIds) },
+          order: { processOrder: 'ASC', id: 'ASC' },
+        });
+      });
     } catch (error) {
       throw ErrorManager.createSignatureError(error);
     }
