@@ -235,6 +235,7 @@ export class PositionService {
 
       if (forProductionReport) {
         options.where = { forProductionReport: true };
+        options.order = { processOrder: 'ASC' };
       }
 
       const positions = await paginationResult(this.positionRepository, {
