@@ -69,6 +69,7 @@ export class PositionService {
         required_boss = false,
         forProductionReport = false,
         processOrder = null,
+        isComulative = false,
         ...payload
       } = createPositionDto;
       const { salary_in_words, amount } = salary;
@@ -98,6 +99,19 @@ export class PositionService {
         });
       }
 
+      if (isComulative) {
+        const positionsComulative = await this.positionRepo.findOne({
+          where: { isComulative: true },
+        });
+
+        if (positionsComulative) {
+          await this.update({
+            id: positionsComulative.id,
+            isComulative: false,
+          });
+        }
+      }
+
       return runInTransaction(this.dataSource, async (queryRunner) => {
         const salaryCrated = await this.findOrCreateSalary(queryRunner, {
           amount,
@@ -112,6 +126,7 @@ export class PositionService {
             processOrder: processOrder ?? undefined,
             salary: salaryCrated,
             requiredBoss: required_boss,
+            isComulative,
           },
           PositionEntity,
           queryRunner,
@@ -428,6 +443,7 @@ export class PositionService {
     }
   }
 
+  // TODO: Validar que la posición no sea acomulativa
   async update({ id, ...updatePositionDto }: UpdatePositionDto) {
     try {
       return runInTransaction(this.dataSource, async (queryRunner) => {

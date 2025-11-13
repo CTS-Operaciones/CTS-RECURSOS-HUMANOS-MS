@@ -69,4 +69,10 @@ export class CreatePositionDto implements ICreatePosition {
   @IsOptional()
   @IsNumber()
   processOrder?: number | null = null;
+
+  @IsOptional()
+  @IsBoolean()
+  @Type(() => Boolean)
+  @ToBoolean('isComulative')
+  isComulative?: boolean = false;
 }
