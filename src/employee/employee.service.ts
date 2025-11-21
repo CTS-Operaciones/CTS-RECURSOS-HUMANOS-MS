@@ -409,7 +409,7 @@ export class EmployeeService {
         bondsHasRecordAlias = 'bondsHasRecord',
         bondAlias = 'bond',
         vacationAlias = 'vacation',
-        attendancePermissionsAlias = 'attendancePermissionsAlias',
+        absencePermissionsAlias = 'absencePermissionsAlias',
         permissionAlias = 'permission';
 
       const employeesQuery =
@@ -479,9 +479,9 @@ export class EmployeeService {
           flag: joinAll || permission,
           path: col<EmploymentRecordEntity>(
             employmentRecordAlias,
-            'attendancePermissions',
+            'employeeHasPosition',
           ),
-          alias: attendancePermissionsAlias,
+          alias: absencePermissionsAlias,
         },
         {
           flag: joinAll || account,
@@ -506,9 +506,10 @@ export class EmployeeService {
           path: col<PositionEntity>(positionAlias, 'department'),
           alias: deparmentAlias,
         },
+        // TODO: Verificar DATOS DE VACACIONES
         {
           flag: joinAll || vacation,
-          path: col<EmploymentRecordEntity>(employmentRecordAlias, 'vacations'),
+          path: col<EmployeeHasPositions>(employeeHasPositionAlias, 'staff'),
           alias: vacationAlias,
         },
         {
@@ -697,6 +698,7 @@ export class EmployeeService {
         },
       };
 
+      // TODO: Verificar DATOS DE VACACIONES
       if (relations || allRelations) {
         options.relations = {
           ...options.relations,
@@ -709,9 +711,7 @@ export class EmployeeService {
             },
             bank: true,
             bondHasEmployee: true,
-            vacations: true,
             typeContract: true,
-            attendancePermissions: true,
           },
         };
       }
@@ -728,6 +728,10 @@ export class EmployeeService {
                 headquarter: { project: true },
                 parent: {
                   employeeHasPositions: {
+                    staff: {
+                      vacations: true,
+                      absencePermission: true,
+                    },
                     employmentRecord: {
                       employee: true,
                     },
@@ -742,8 +746,6 @@ export class EmployeeService {
               },
             },
             bank: true,
-            attendancePermissions: true,
-            vacations: true,
             typeContract: true,
           },
         };

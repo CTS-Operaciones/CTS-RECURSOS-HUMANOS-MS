@@ -8,9 +8,6 @@ import { EmployeeModule } from './employee/employee.module';
 import { DepartmentModule } from './department/department.module';
 import { DocumentModule } from './document/document.module';
 import { PositionModule } from './position/position.module';
-import { HolidayModule } from './holiday/holiday.module';
-import { VacationModule } from './vacation/vacation.module';
-import { AttendancePermissionModule } from './attendance-permission/attendance-permission.module';
 import { DismissalsModule } from './dismissals/dismissals.module';
 import { BondsModule } from './bonds/bonds.module';
 import { DashboardModule } from './dashboard/dashboard.module';
@@ -27,9 +24,6 @@ import { DashboardModule } from './dashboard/dashboard.module';
     DocumentModule,
     EmployeeModule,
     PositionModule,
-    HolidayModule,
-    VacationModule,
-    AttendancePermissionModule,
   ],
 })
 export class AppModule {}

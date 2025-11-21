@@ -16,7 +16,7 @@ import { PositionModule } from '../position/position.module';
 import { BankModule } from '../bank/bank.module';
 
 import { NatsModule } from '../common';
-import { ContractModule } from 'src/contract/contract.module';
+import { ContractModule } from '../contract/contract.module';
 
 const entities = [EmployeeEntity, EmploymentRecordEntity, EmployeeHasPositions];
 

@@ -1,4 +1,3 @@
-export * from './attendancePermission.interface';
 export * from './bank.interface';
 export * from './bond.interface';
 export * from './bondHasStaff.interface';
@@ -13,4 +12,3 @@ export * from './position.interface';
 export * from './salary.interface';
 export * from './staff.interface';
 export * from './typeContract.interface';
-export * from './vacation.interface';

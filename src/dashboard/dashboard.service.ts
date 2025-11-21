@@ -13,19 +13,17 @@ import {
   BondEntity,
   TypesBondEntity,
   VacationEntity,
-  AttendancePermission,
-  STATUS_VACATIONS_PERMISSION
-} from "cts-entities";
+  AbsencePermission,
+  STATUS_VACATIONS_PERMISSION,
+} from 'cts-entities';
 
-import { col, ErrorManager, IChartData, IResponseSummary } from "../common";
+import { col, ErrorManager, IChartData, IResponseSummary } from '../common';
 
-import { FilterDashboardDto, GroupByPeriod } from "./dto";
+import { FilterDashboardDto, GroupByPeriod } from './dto';
 
 @Injectable()
 export class DashboardService {
-  constructor(
-    private readonly dataSource: DataSource,
-  ) { }
+  constructor(private readonly dataSource: DataSource) {}
 
   async getDashboardData(filters: FilterDashboardDto) {
     try {
@@ -48,7 +46,10 @@ export class DashboardService {
   private async getSummaryEmployees(filters: FilterDashboardDto) {
     try {
       const summary: IResponseSummary[] = [];
-      summary.push({ name: 'Total', count: await this.getCountByFilters(filters) });
+      summary.push({
+        name: 'Total',
+        count: await this.getCountByFilters(filters),
+      });
 
       // Determinar qué contadores adicionales incluir según los filtros
       const {
@@ -56,29 +57,50 @@ export class DashboardService {
         hasBonds,
         hasActiveBonds,
         hasExpiredBonds,
-        bondTypeId
+        bondTypeId,
       } = filters;
 
       // Si se especifica isDismissal, mostrar solo el contador correspondiente
       if (isDismissal === true) {
-        summary.push({ name: 'Empleados Despedidos', count: await this.getCountDespedidos(filters) });
+        summary.push({
+          name: 'Empleados Despedidos',
+          count: await this.getCountDespedidos(filters),
+        });
       } else if (isDismissal === false) {
-        summary.push({ name: 'Empleados Activos', count: await this.getCountActivos(filters) });
+        summary.push({
+          name: 'Empleados Activos',
+          count: await this.getCountActivos(filters),
+        });
       } else {
         // Si no se especifica isDismissal, mostrar ambos
-        summary.push({ name: 'Empleados Activos', count: await this.getCountActivos(filters) });
-        summary.push({ name: 'Empleados Despedidos', count: await this.getCountDespedidos(filters) });
+        summary.push({
+          name: 'Empleados Activos',
+          count: await this.getCountActivos(filters),
+        });
+        summary.push({
+          name: 'Empleados Despedidos',
+          count: await this.getCountDespedidos(filters),
+        });
       }
 
       // Si hay filtros de bonos, incluir contador de bonos
       if (hasBonds || hasActiveBonds || hasExpiredBonds || bondTypeId) {
-        summary.push({ name: 'Empleados con Bonos', count: await this.getCountConBonos(filters) });
+        summary.push({
+          name: 'Empleados con Bonos',
+          count: await this.getCountConBonos(filters),
+        });
       }
 
       // Siempre incluir contadores de vacaciones y permisos (son métricas útiles)
-      summary.push({ name: 'Empleados con Vacaciones', count: await this.getCountConVacaciones(filters) });
+      summary.push({
+        name: 'Empleados con Vacaciones',
+        count: await this.getCountConVacaciones(filters),
+      });
 
-      summary.push({ name: 'Empleados con Permisos', count: await this.getCountConPermisos(filters) });
+      summary.push({
+        name: 'Empleados con Permisos',
+        count: await this.getCountConPermisos(filters),
+      });
 
       return summary;
     } catch (error) {
@@ -97,7 +119,7 @@ export class DashboardService {
     hasBonds,
     hasActiveBonds,
     hasExpiredBonds,
-    bondTypeId
+    bondTypeId,
   }: FilterDashboardDto): Promise<number> {
     try {
       const employeeAlias = 'employee';
@@ -113,35 +135,42 @@ export class DashboardService {
       const bondTypeAlias = 'bondType';
 
       // Contar registros de staff (si un empleado tiene múltiples staff, cuenta cada uno)
-      const query = this.dataSource.createQueryBuilder(EmployeeEntity, employeeAlias)
+      const query = this.dataSource
+        .createQueryBuilder(EmployeeEntity, employeeAlias)
         .innerJoin(
           `${col<EmployeeEntity>(employeeAlias, 'employmentRecord')}`,
           employmentRecordAlias,
           `${col<EmploymentRecordEntity>(employmentRecordAlias, 'deleted_at')} IS NULL`,
         )
-        .where(`${col<EmployeeEntity>(employeeAlias, 'status')} = :status`,
-          { status: isDismissal ? 'DISMISSAL' : 'ACTIVE' }
-        );
+        .where(`${col<EmployeeEntity>(employeeAlias, 'status')} = :status`, {
+          status: isDismissal ? 'DISMISSAL' : 'ACTIVE',
+        });
 
       // Para empleados activos, el contrato debe estar vigente (date_end IS NULL)
       // Para empleados despedidos, el contrato debe haber terminado (date_end IS NOT NULL)
       if (isDismissal) {
-        query.andWhere(`${col<EmploymentRecordEntity>(employmentRecordAlias, 'date_end')} IS NOT NULL`);
+        query.andWhere(
+          `${col<EmploymentRecordEntity>(employmentRecordAlias, 'date_end')} IS NOT NULL`,
+        );
       } else {
-        query.andWhere(`${col<EmploymentRecordEntity>(employmentRecordAlias, 'date_end')} IS NULL`);
+        query.andWhere(
+          `${col<EmploymentRecordEntity>(employmentRecordAlias, 'date_end')} IS NULL`,
+        );
       }
 
       // Si no hay filtros de staff/posición, contar empleados únicos
       if (!positionId && !departmentId && !headquarterId && !projectId) {
-        query.select(`COUNT(DISTINCT ${col<EmployeeEntity>(employeeAlias, 'id')})`, 'total_employees');
+        query.select(
+          `COUNT(DISTINCT ${col<EmployeeEntity>(employeeAlias, 'id')})`,
+          'total_employees',
+        );
       } else {
         // Si hay filtros de staff/posición, necesitamos contar cada asignación
-        query
-          .innerJoin(
-            `${col<EmploymentRecordEntity>(employmentRecordAlias, 'employeeHasPosition')}`,
-            employeeHasPositionsAlias,
-            `${col<EmployeeHasPositions>(employeeHasPositionsAlias, 'deleted_at')} IS NULL`,
-          );
+        query.innerJoin(
+          `${col<EmploymentRecordEntity>(employmentRecordAlias, 'employeeHasPosition')}`,
+          employeeHasPositionsAlias,
+          `${col<EmployeeHasPositions>(employeeHasPositionsAlias, 'deleted_at')} IS NULL`,
+        );
 
         // Para contar correctamente, usamos el ID de staff si está disponible
         if (headquarterId || projectId) {
@@ -151,10 +180,16 @@ export class DashboardService {
               staffAlias,
               `${col<StaffEntity>(staffAlias, 'deleted_at')} IS NULL`,
             )
-            .select(`COUNT(DISTINCT ${col<StaffEntity>(staffAlias, 'id')})`, 'total_employees');
+            .select(
+              `COUNT(DISTINCT ${col<StaffEntity>(staffAlias, 'id')})`,
+              'total_employees',
+            );
         } else {
           // Si solo filtramos por posición/departamento, contamos employeeHasPositions
-          query.select(`COUNT(DISTINCT ${col<EmployeeHasPositions>(employeeHasPositionsAlias, 'id')})`, 'total_employees');
+          query.select(
+            `COUNT(DISTINCT ${col<EmployeeHasPositions>(employeeHasPositionsAlias, 'id')})`,
+            'total_employees',
+          );
         }
 
         // Join con Position si se filtra por positionId o departmentId
@@ -167,7 +202,10 @@ export class DashboardService {
 
           // Filtro por positionId
           if (positionId) {
-            query.andWhere(`${col<PositionEntity>(positionAlias, 'id')} = :positionId`, { positionId });
+            query.andWhere(
+              `${col<PositionEntity>(positionAlias, 'id')} = :positionId`,
+              { positionId },
+            );
           }
 
           // Join con Department si se filtra por departmentId
@@ -177,13 +215,20 @@ export class DashboardService {
               departmentAlias,
               `${col<DepartmentEntity>(departmentAlias, 'deleted_at')} IS NULL`,
             );
-            query.andWhere(`${col<DepartmentEntity>(departmentAlias, 'id')} = :departmentId`, { departmentId });
+            query.andWhere(
+              `${col<DepartmentEntity>(departmentAlias, 'id')} = :departmentId`,
+              { departmentId },
+            );
           }
         }
 
         // Join con Staff, Headquarters y Project si se filtra por sede o proyecto
         if (headquarterId || projectId) {
-          if (!query.expressionMap.joinAttributes.find(j => j.alias.name === staffAlias)) {
+          if (
+            !query.expressionMap.joinAttributes.find(
+              (j) => j.alias.name === staffAlias,
+            )
+          ) {
             query.innerJoin(
               `${col<EmployeeHasPositions>(employeeHasPositionsAlias, 'staff')}`,
               staffAlias,
@@ -199,7 +244,10 @@ export class DashboardService {
 
           // Filtro por headquarterId
           if (headquarterId) {
-            query.andWhere(`${col<Headquarters>(headquarterAlias, 'id')} = :headquarterId`, { headquarterId });
+            query.andWhere(
+              `${col<Headquarters>(headquarterAlias, 'id')} = :headquarterId`,
+              { headquarterId },
+            );
           }
 
           // Join con Project si se filtra por projectId
@@ -209,7 +257,9 @@ export class DashboardService {
               projectAlias,
               `${col<Project>(projectAlias, 'deleted_at')} IS NULL`,
             );
-            query.andWhere(`${col<Project>(projectAlias, 'id')} = :projectId`, { projectId });
+            query.andWhere(`${col<Project>(projectAlias, 'id')} = :projectId`, {
+              projectId,
+            });
           }
         }
       }
@@ -222,22 +272,16 @@ export class DashboardService {
 
       if (startDate && endDate) {
         // Si ambas fechas están presentes, usar BETWEEN
-        query.andWhere(
-          `${dateField} BETWEEN :startDate AND :endDate`,
-          { startDate, endDate },
-        );
+        query.andWhere(`${dateField} BETWEEN :startDate AND :endDate`, {
+          startDate,
+          endDate,
+        });
       } else if (startDate) {
         // Si solo está startDate, filtrar desde esa fecha en adelante
-        query.andWhere(
-          `${dateField} >= :startDate`,
-          { startDate },
-        );
+        query.andWhere(`${dateField} >= :startDate`, { startDate });
       } else if (endDate) {
         // Si solo está endDate, filtrar hasta esa fecha
-        query.andWhere(
-          `${dateField} <= :endDate`,
-          { endDate },
-        );
+        query.andWhere(`${dateField} <= :endDate`, { endDate });
       }
 
       // Filtros de bonos
@@ -288,7 +332,10 @@ export class DashboardService {
               bondTypeAlias,
               `${col<TypesBondEntity>(bondTypeAlias, 'deleted_at')} IS NULL`,
             )
-            .andWhere(`${col<TypesBondEntity>(bondTypeAlias, 'id')} = :bondTypeId`, { bondTypeId });
+            .andWhere(
+              `${col<TypesBondEntity>(bondTypeAlias, 'id')} = :bondTypeId`,
+              { bondTypeId },
+            );
         }
       }
 
@@ -303,15 +350,22 @@ export class DashboardService {
     return this.getCountByStatus({ ...filters, isDismissal: false });
   }
 
-  private async getCountDespedidos(filters: FilterDashboardDto): Promise<number> {
+  private async getCountDespedidos(
+    filters: FilterDashboardDto,
+  ): Promise<number> {
     return this.getCountByStatus({ ...filters, isDismissal: true });
   }
 
   private async getCountByStatus(filters: FilterDashboardDto): Promise<number> {
     try {
       const {
-        startDate, endDate, isDismissal,
-        headquarterId, projectId, positionId, departmentId
+        startDate,
+        endDate,
+        isDismissal,
+        headquarterId,
+        projectId,
+        positionId,
+        departmentId,
       } = filters;
 
       const employeeAlias = 'employee';
@@ -323,32 +377,36 @@ export class DashboardService {
       const headquarterAlias = 'headquarter';
       const projectAlias = 'project';
 
-      const query = this.dataSource.createQueryBuilder(EmployeeEntity, employeeAlias)
+      const query = this.dataSource
+        .createQueryBuilder(EmployeeEntity, employeeAlias)
         .innerJoin(
           `${col<EmployeeEntity>(employeeAlias, 'employmentRecord')}`,
           employmentRecordAlias,
           `${col<EmploymentRecordEntity>(employmentRecordAlias, 'deleted_at')} IS NULL`,
         )
-        .where(`${col<EmployeeEntity>(employeeAlias, 'status')} = :status`,
-          { status: isDismissal ? 'DISMISSAL' : 'ACTIVE' }
-        );
+        .where(`${col<EmployeeEntity>(employeeAlias, 'status')} = :status`, {
+          status: isDismissal ? 'DISMISSAL' : 'ACTIVE',
+        });
 
       // Para empleados activos, el contrato debe estar vigente (date_end IS NULL)
       // Para empleados despedidos, el contrato debe haber terminado (date_end IS NOT NULL)
       if (isDismissal) {
-        query.andWhere(`${col<EmploymentRecordEntity>(employmentRecordAlias, 'date_end')} IS NOT NULL`);
+        query.andWhere(
+          `${col<EmploymentRecordEntity>(employmentRecordAlias, 'date_end')} IS NOT NULL`,
+        );
       } else {
-        query.andWhere(`${col<EmploymentRecordEntity>(employmentRecordAlias, 'date_end')} IS NULL`);
+        query.andWhere(
+          `${col<EmploymentRecordEntity>(employmentRecordAlias, 'date_end')} IS NULL`,
+        );
       }
 
       // Aplicar filtros de ubicación si existen
       if (positionId || departmentId || headquarterId || projectId) {
-        query
-          .innerJoin(
-            `${col<EmploymentRecordEntity>(employmentRecordAlias, 'employeeHasPosition')}`,
-            employeeHasPositionsAlias,
-            `${col<EmployeeHasPositions>(employeeHasPositionsAlias, 'deleted_at')} IS NULL`,
-          );
+        query.innerJoin(
+          `${col<EmploymentRecordEntity>(employmentRecordAlias, 'employeeHasPosition')}`,
+          employeeHasPositionsAlias,
+          `${col<EmployeeHasPositions>(employeeHasPositionsAlias, 'deleted_at')} IS NULL`,
+        );
 
         if (headquarterId || projectId) {
           query
@@ -357,9 +415,15 @@ export class DashboardService {
               staffAlias,
               `${col<StaffEntity>(staffAlias, 'deleted_at')} IS NULL`,
             )
-            .select(`COUNT(DISTINCT ${col<StaffEntity>(staffAlias, 'id')})`, 'total_employees');
+            .select(
+              `COUNT(DISTINCT ${col<StaffEntity>(staffAlias, 'id')})`,
+              'total_employees',
+            );
         } else {
-          query.select(`COUNT(DISTINCT ${col<EmployeeHasPositions>(employeeHasPositionsAlias, 'id')})`, 'total_employees');
+          query.select(
+            `COUNT(DISTINCT ${col<EmployeeHasPositions>(employeeHasPositionsAlias, 'id')})`,
+            'total_employees',
+          );
         }
 
         if (positionId || departmentId) {
@@ -370,7 +434,10 @@ export class DashboardService {
           );
 
           if (positionId) {
-            query.andWhere(`${col<PositionEntity>(positionAlias, 'id')} = :positionId`, { positionId });
+            query.andWhere(
+              `${col<PositionEntity>(positionAlias, 'id')} = :positionId`,
+              { positionId },
+            );
           }
 
           if (departmentId) {
@@ -380,12 +447,19 @@ export class DashboardService {
                 departmentAlias,
                 `${col<DepartmentEntity>(departmentAlias, 'deleted_at')} IS NULL`,
               )
-              .andWhere(`${col<DepartmentEntity>(departmentAlias, 'id')} = :departmentId`, { departmentId });
+              .andWhere(
+                `${col<DepartmentEntity>(departmentAlias, 'id')} = :departmentId`,
+                { departmentId },
+              );
           }
         }
 
         if (headquarterId || projectId) {
-          if (!query.expressionMap.joinAttributes.find(j => j.alias.name === staffAlias)) {
+          if (
+            !query.expressionMap.joinAttributes.find(
+              (j) => j.alias.name === staffAlias,
+            )
+          ) {
             query.innerJoin(
               `${col<EmployeeHasPositions>(employeeHasPositionsAlias, 'staff')}`,
               staffAlias,
@@ -400,7 +474,10 @@ export class DashboardService {
           );
 
           if (headquarterId) {
-            query.andWhere(`${col<Headquarters>(headquarterAlias, 'id')} = :headquarterId`, { headquarterId });
+            query.andWhere(
+              `${col<Headquarters>(headquarterAlias, 'id')} = :headquarterId`,
+              { headquarterId },
+            );
           }
 
           if (projectId) {
@@ -410,11 +487,16 @@ export class DashboardService {
                 projectAlias,
                 `${col<Project>(projectAlias, 'deleted_at')} IS NULL`,
               )
-              .andWhere(`${col<Project>(projectAlias, 'id')} = :projectId`, { projectId });
+              .andWhere(`${col<Project>(projectAlias, 'id')} = :projectId`, {
+                projectId,
+              });
           }
         }
       } else {
-        query.select(`COUNT(DISTINCT ${col<EmployeeEntity>(employeeAlias, 'id')})`, 'total_employees');
+        query.select(
+          `COUNT(DISTINCT ${col<EmployeeEntity>(employeeAlias, 'id')})`,
+          'total_employees',
+        );
       }
 
       // Filtros por fecha
@@ -424,20 +506,14 @@ export class DashboardService {
         : col<EmploymentRecordEntity>(employmentRecordAlias, 'date_register');
 
       if (startDate && endDate) {
-        query.andWhere(
-          `${dateField} BETWEEN :startDate AND :endDate`,
-          { startDate, endDate },
-        );
+        query.andWhere(`${dateField} BETWEEN :startDate AND :endDate`, {
+          startDate,
+          endDate,
+        });
       } else if (startDate) {
-        query.andWhere(
-          `${dateField} >= :startDate`,
-          { startDate },
-        );
+        query.andWhere(`${dateField} >= :startDate`, { startDate });
       } else if (endDate) {
-        query.andWhere(
-          `${dateField} <= :endDate`,
-          { endDate },
-        );
+        query.andWhere(`${dateField} <= :endDate`, { endDate });
       }
 
       const result = await query.getRawOne();
@@ -451,42 +527,66 @@ export class DashboardService {
     return this.getCountByFilters({ ...filters, hasBonds: true });
   }
 
-  private async getCountConVacaciones(filters: FilterDashboardDto): Promise<number> {
+  private async getCountConVacaciones(
+    filters: FilterDashboardDto,
+  ): Promise<number> {
     try {
       const {
-        startDate, endDate,
-        headquarterId, projectId, positionId, departmentId,
-        showPendingVacations
+        startDate,
+        endDate,
+        headquarterId,
+        projectId,
+        positionId,
+        departmentId,
+        showPendingVacations,
       } = filters;
 
       const employeeAlias = 'employee';
       const employmentRecordAlias = 'employmentRecord';
+      const employeeHasPositionsAlias = 'employeeHasPositions';
+      const staffAlias = 'staff';
       const vacationAlias = 'vacation';
 
-      const query = this.dataSource.createQueryBuilder(EmployeeEntity, employeeAlias)
-        .select(`COUNT(DISTINCT ${col<EmployeeEntity>(employeeAlias, 'id')})`, 'total_employees')
+      const query = this.dataSource
+        .createQueryBuilder(EmployeeEntity, employeeAlias)
+        .select(
+          `COUNT(DISTINCT ${col<EmployeeEntity>(employeeAlias, 'id')})`,
+          'total_employees',
+        )
         .innerJoin(
           `${col<EmployeeEntity>(employeeAlias, 'employmentRecord')}`,
           employmentRecordAlias,
           `${col<EmploymentRecordEntity>(employmentRecordAlias, 'deleted_at')} IS NULL`,
         )
         .innerJoin(
-          `${col<EmploymentRecordEntity>(employmentRecordAlias, 'vacations')}`,
+          `${col<EmploymentRecordEntity>(employmentRecordAlias, 'employeeHasPosition')}`,
+          employeeHasPositionsAlias,
+          `${col<EmployeeHasPositions>(employeeHasPositionsAlias, 'deleted_at')} IS NULL`,
+        )
+        .innerJoin(
+          `${col<EmployeeHasPositions>(employeeHasPositionsAlias, 'staff')}`,
+          staffAlias,
+          `${col<StaffEntity>(staffAlias, 'deleted_at')} IS NULL`,
+        )
+        .innerJoin(
+          `${col<StaffEntity>(staffAlias, 'vacations')}`,
           vacationAlias,
           `${col<VacationEntity>(vacationAlias, 'deleted_at')} IS NULL`,
         )
-        .where(`${col<EmployeeEntity>(employeeAlias, 'status')} IN ('ACTIVE', 'DISMISSAL')`);
+        .where(
+          `${col<EmployeeEntity>(employeeAlias, 'status')} IN ('ACTIVE', 'DISMISSAL')`,
+        );
 
       // Filtrar por status de vacaciones: PENDING si se solicita, APPROVED por defecto
       if (showPendingVacations) {
         query.andWhere(
           `${col<VacationEntity>(vacationAlias, 'status')} = :vacationStatus`,
-          { vacationStatus: STATUS_VACATIONS_PERMISSION.PENDING }
+          { vacationStatus: STATUS_VACATIONS_PERMISSION.PENDING },
         );
       } else {
         query.andWhere(
           `${col<VacationEntity>(vacationAlias, 'status')} = :vacationStatus`,
-          { vacationStatus: STATUS_VACATIONS_PERMISSION.APPROVED }
+          { vacationStatus: STATUS_VACATIONS_PERMISSION.APPROVED },
         );
       }
 
@@ -507,11 +607,12 @@ export class DashboardService {
         );
 
         if (headquarterId || projectId) {
-          query.innerJoin(
-            `${col<EmployeeHasPositions>(employeeHasPositionsAlias, 'staff')}`,
-            staffAlias,
-            `${col<StaffEntity>(staffAlias, 'deleted_at')} IS NULL`,
-          )
+          query
+            .innerJoin(
+              `${col<EmployeeHasPositions>(employeeHasPositionsAlias, 'staff')}`,
+              staffAlias,
+              `${col<StaffEntity>(staffAlias, 'deleted_at')} IS NULL`,
+            )
             .innerJoin(
               `${col<StaffEntity>(staffAlias, 'headquarter')}`,
               headquarterAlias,
@@ -519,7 +620,10 @@ export class DashboardService {
             );
 
           if (headquarterId) {
-            query.andWhere(`${col<Headquarters>(headquarterAlias, 'id')} = :headquarterId`, { headquarterId });
+            query.andWhere(
+              `${col<Headquarters>(headquarterAlias, 'id')} = :headquarterId`,
+              { headquarterId },
+            );
           }
 
           if (projectId) {
@@ -529,7 +633,9 @@ export class DashboardService {
                 projectAlias,
                 `${col<Project>(projectAlias, 'deleted_at')} IS NULL`,
               )
-              .andWhere(`${col<Project>(projectAlias, 'id')} = :projectId`, { projectId });
+              .andWhere(`${col<Project>(projectAlias, 'id')} = :projectId`, {
+                projectId,
+              });
           }
         }
 
@@ -541,7 +647,10 @@ export class DashboardService {
           );
 
           if (positionId) {
-            query.andWhere(`${col<PositionEntity>(positionAlias, 'id')} = :positionId`, { positionId });
+            query.andWhere(
+              `${col<PositionEntity>(positionAlias, 'id')} = :positionId`,
+              { positionId },
+            );
           }
 
           if (departmentId) {
@@ -551,7 +660,10 @@ export class DashboardService {
                 departmentAlias,
                 `${col<DepartmentEntity>(departmentAlias, 'deleted_at')} IS NULL`,
               )
-              .andWhere(`${col<DepartmentEntity>(departmentAlias, 'id')} = :departmentId`, { departmentId });
+              .andWhere(
+                `${col<DepartmentEntity>(departmentAlias, 'id')} = :departmentId`,
+                { departmentId },
+              );
           }
         }
       }
@@ -581,42 +693,66 @@ export class DashboardService {
     }
   }
 
-  private async getCountConPermisos(filters: FilterDashboardDto): Promise<number> {
+  private async getCountConPermisos(
+    filters: FilterDashboardDto,
+  ): Promise<number> {
     try {
       const {
-        startDate, endDate,
-        headquarterId, projectId, positionId, departmentId,
-        showPendingPermissions
+        startDate,
+        endDate,
+        headquarterId,
+        projectId,
+        positionId,
+        departmentId,
+        showPendingPermissions,
       } = filters;
 
       const employeeAlias = 'employee';
       const employmentRecordAlias = 'employmentRecord';
-      const permissionAlias = 'permission';
+      const employeeHasPositionsAlias = 'employeeHasPositions';
+      const staffAlias = 'staff';
+      const absencePermissionAlias = 'absencePermission';
 
-      const query = this.dataSource.createQueryBuilder(EmployeeEntity, employeeAlias)
-        .select(`COUNT(DISTINCT ${col<EmployeeEntity>(employeeAlias, 'id')})`, 'total_employees')
+      const query = this.dataSource
+        .createQueryBuilder(EmployeeEntity, employeeAlias)
+        .select(
+          `COUNT(DISTINCT ${col<EmployeeEntity>(employeeAlias, 'id')})`,
+          'total_employees',
+        )
         .innerJoin(
           `${col<EmployeeEntity>(employeeAlias, 'employmentRecord')}`,
           employmentRecordAlias,
           `${col<EmploymentRecordEntity>(employmentRecordAlias, 'deleted_at')} IS NULL`,
         )
         .innerJoin(
-          `${col<EmploymentRecordEntity>(employmentRecordAlias, 'attendancePermissions')}`,
-          permissionAlias,
-          `${col<AttendancePermission>(permissionAlias, 'deleted_at')} IS NULL`,
+          `${col<EmploymentRecordEntity>(employmentRecordAlias, 'employeeHasPosition')}`,
+          employeeHasPositionsAlias,
+          `${col<EmployeeHasPositions>(employeeHasPositionsAlias, 'deleted_at')} IS NULL`,
         )
-        .where(`${col<EmployeeEntity>(employeeAlias, 'status')} IN ('ACTIVE', 'DISMISSAL')`);
+        .innerJoin(
+          `${col<EmployeeHasPositions>(employeeHasPositionsAlias, 'staff')}`,
+          staffAlias,
+          `${col<StaffEntity>(staffAlias, 'deleted_at')} IS NULL`,
+        )
+        .innerJoin(
+          `${col<StaffEntity>(staffAlias, 'absencePermission')}`,
+          absencePermissionAlias,
+          `${col<AbsencePermission>(absencePermissionAlias, 'deleted_at')} IS NULL`,
+        )
+        .where(
+          `${col<EmployeeEntity>(employeeAlias, 'status')} IN ('ACTIVE', 'DISMISSAL')`,
+        );
 
       // Filtrar por status de permisos: PENDING si se solicita, APPROVED por defecto
       if (showPendingPermissions) {
         query.andWhere(
-          `${col<AttendancePermission>(permissionAlias, 'status')} = :permissionStatus`,
-          { permissionStatus: STATUS_VACATIONS_PERMISSION.PENDING }
+          `${col<AbsencePermission>(absencePermissionAlias, 'status')} = :permissionStatus`,
+          { permissionStatus: STATUS_VACATIONS_PERMISSION.PENDING },
         );
       } else {
         query.andWhere(
-          `${col<AttendancePermission>(permissionAlias, 'status')} = :permissionStatus`,
-          { permissionStatus: STATUS_VACATIONS_PERMISSION.APPROVED }
+          `${col<AbsencePermission>(absencePermissionAlias, 'status')} = :permissionStatus`,
+          { permissionStatus: STATUS_VACATIONS_PERMISSION.APPROVED },
         );
       }
 
@@ -636,11 +772,12 @@ export class DashboardService {
         );
 
         if (headquarterId || projectId) {
-          query.innerJoin(
-            `${col<EmployeeHasPositions>(employeeHasPositionsAlias, 'staff')}`,
-            staffAlias,
-            `${col<StaffEntity>(staffAlias, 'deleted_at')} IS NULL`,
-          )
+          query
+            .innerJoin(
+              `${col<EmployeeHasPositions>(employeeHasPositionsAlias, 'staff')}`,
+              staffAlias,
+              `${col<StaffEntity>(staffAlias, 'deleted_at')} IS NULL`,
+            )
             .innerJoin(
               `${col<StaffEntity>(staffAlias, 'headquarter')}`,
               headquarterAlias,
@@ -648,7 +785,10 @@ export class DashboardService {
             );
 
           if (headquarterId) {
-            query.andWhere(`${col<Headquarters>(headquarterAlias, 'id')} = :headquarterId`, { headquarterId });
+            query.andWhere(
+              `${col<Headquarters>(headquarterAlias, 'id')} = :headquarterId`,
+              { headquarterId },
+            );
           }
 
           if (projectId) {
@@ -658,7 +798,9 @@ export class DashboardService {
                 projectAlias,
                 `${col<Project>(projectAlias, 'deleted_at')} IS NULL`,
               )
-              .andWhere(`${col<Project>(projectAlias, 'id')} = :projectId`, { projectId });
+              .andWhere(`${col<Project>(projectAlias, 'id')} = :projectId`, {
+                projectId,
+              });
           }
         }
 
@@ -670,7 +812,10 @@ export class DashboardService {
           );
 
           if (positionId) {
-            query.andWhere(`${col<PositionEntity>(positionAlias, 'id')} = :positionId`, { positionId });
+            query.andWhere(
+              `${col<PositionEntity>(positionAlias, 'id')} = :positionId`,
+              { positionId },
+            );
           }
 
           if (departmentId) {
@@ -680,7 +825,10 @@ export class DashboardService {
                 departmentAlias,
                 `${col<DepartmentEntity>(departmentAlias, 'deleted_at')} IS NULL`,
               )
-              .andWhere(`${col<DepartmentEntity>(departmentAlias, 'id')} = :departmentId`, { departmentId });
+              .andWhere(
+                `${col<DepartmentEntity>(departmentAlias, 'id')} = :departmentId`,
+                { departmentId },
+              );
           }
         }
       }
@@ -721,7 +869,7 @@ export class DashboardService {
     hasBonds,
     hasActiveBonds,
     hasExpiredBonds,
-    bondTypeId
+    bondTypeId,
   }: FilterDashboardDto) {
     try {
       const employeeAlias = 'employee';
@@ -736,7 +884,8 @@ export class DashboardService {
       const bondAlias = 'bond';
       const bondTypeAlias = 'bondType';
 
-      const query = this.dataSource.createQueryBuilder(EmployeeEntity, employeeAlias)
+      const query = this.dataSource
+        .createQueryBuilder(EmployeeEntity, employeeAlias)
         .select([
           `${col<EmployeeEntity>(employeeAlias, 'id')} as employee_id`,
           `CONCAT(
@@ -753,16 +902,20 @@ export class DashboardService {
           employmentRecordAlias,
           `${col<EmploymentRecordEntity>(employmentRecordAlias, 'deleted_at')} IS NULL`,
         )
-        .where(`${col<EmployeeEntity>(employeeAlias, 'status')} = :status`,
-          { status: isDismissal ? 'DISMISSAL' : 'ACTIVE' }
-        );
+        .where(`${col<EmployeeEntity>(employeeAlias, 'status')} = :status`, {
+          status: isDismissal ? 'DISMISSAL' : 'ACTIVE',
+        });
 
       // Para empleados activos, el contrato debe estar vigente (date_end IS NULL)
       // Para empleados despedidos, el contrato debe haber terminado (date_end IS NOT NULL)
       if (isDismissal) {
-        query.andWhere(`${col<EmploymentRecordEntity>(employmentRecordAlias, 'date_end')} IS NOT NULL`);
+        query.andWhere(
+          `${col<EmploymentRecordEntity>(employmentRecordAlias, 'date_end')} IS NOT NULL`,
+        );
       } else {
-        query.andWhere(`${col<EmploymentRecordEntity>(employmentRecordAlias, 'date_end')} IS NULL`);
+        query.andWhere(
+          `${col<EmploymentRecordEntity>(employmentRecordAlias, 'date_end')} IS NULL`,
+        );
       }
 
       // Variable para saber si ya hicimos el join con employeeHasPositions
@@ -786,13 +939,20 @@ export class DashboardService {
               positionAlias,
               `${col<PositionEntity>(positionAlias, 'deleted_at')} IS NULL`,
             )
-            .addSelect(`${col<PositionEntity>(positionAlias, 'name')} as position_name`)
-            .addSelect(`${col<PositionEntity>(positionAlias, 'id')} as position_id`);
+            .addSelect(
+              `${col<PositionEntity>(positionAlias, 'name')} as position_name`,
+            )
+            .addSelect(
+              `${col<PositionEntity>(positionAlias, 'id')} as position_id`,
+            );
           hasPositionJoin = true;
 
           // Filtro por positionId
           if (positionId) {
-            query.andWhere(`${col<PositionEntity>(positionAlias, 'id')} = :positionId`, { positionId });
+            query.andWhere(
+              `${col<PositionEntity>(positionAlias, 'id')} = :positionId`,
+              { positionId },
+            );
           }
 
           // Join con Department si se filtra por departmentId
@@ -803,8 +963,13 @@ export class DashboardService {
                 departmentAlias,
                 `${col<DepartmentEntity>(departmentAlias, 'deleted_at')} IS NULL`,
               )
-              .addSelect(`${col<DepartmentEntity>(departmentAlias, 'name')} as department_name`)
-              .andWhere(`${col<DepartmentEntity>(departmentAlias, 'id')} = :departmentId`, { departmentId });
+              .addSelect(
+                `${col<DepartmentEntity>(departmentAlias, 'name')} as department_name`,
+              )
+              .andWhere(
+                `${col<DepartmentEntity>(departmentAlias, 'id')} = :departmentId`,
+                { departmentId },
+              );
           } else {
             // Si no filtramos por departamento pero sí por posición, incluimos el departamento en el select
             query
@@ -813,7 +978,9 @@ export class DashboardService {
                 departmentAlias,
                 `${col<DepartmentEntity>(departmentAlias, 'deleted_at')} IS NULL`,
               )
-              .addSelect(`${col<DepartmentEntity>(departmentAlias, 'name')} as department_name`);
+              .addSelect(
+                `${col<DepartmentEntity>(departmentAlias, 'name')} as department_name`,
+              );
           }
         }
 
@@ -833,11 +1000,16 @@ export class DashboardService {
               headquarterAlias,
               `${col<Headquarters>(headquarterAlias, 'deleted_at')} IS NULL`,
             )
-            .addSelect(`${col<Headquarters>(headquarterAlias, 'name')} as headquarter_name`);
+            .addSelect(
+              `${col<Headquarters>(headquarterAlias, 'name')} as headquarter_name`,
+            );
 
           // Filtro por headquarterId
           if (headquarterId) {
-            query.andWhere(`${col<Headquarters>(headquarterAlias, 'id')} = :headquarterId`, { headquarterId });
+            query.andWhere(
+              `${col<Headquarters>(headquarterAlias, 'id')} = :headquarterId`,
+              { headquarterId },
+            );
           }
 
           // Join con Project si se filtra por projectId
@@ -848,8 +1020,12 @@ export class DashboardService {
                 projectAlias,
                 `${col<Project>(projectAlias, 'deleted_at')} IS NULL`,
               )
-              .addSelect(`${col<Project>(projectAlias, 'name')} as project_name`);
-            query.andWhere(`${col<Project>(projectAlias, 'id')} = :projectId`, { projectId });
+              .addSelect(
+                `${col<Project>(projectAlias, 'name')} as project_name`,
+              );
+            query.andWhere(`${col<Project>(projectAlias, 'id')} = :projectId`, {
+              projectId,
+            });
           } else {
             // Incluir project aunque no se filtre por él
             query
@@ -858,7 +1034,9 @@ export class DashboardService {
                 projectAlias,
                 `${col<Project>(projectAlias, 'deleted_at')} IS NULL`,
               )
-              .addSelect(`${col<Project>(projectAlias, 'name')} as project_name`);
+              .addSelect(
+                `${col<Project>(projectAlias, 'name')} as project_name`,
+              );
           }
         }
       }
@@ -886,9 +1064,15 @@ export class DashboardService {
             staffAlias,
             `${col<StaffEntity>(staffAlias, 'deleted_at')} IS NULL`,
           )
-          .addSelect(`${col<PositionEntity>(positionAlias, 'name')} as position_name`)
-          .addSelect(`${col<PositionEntity>(positionAlias, 'id')} as position_id`)
-          .addSelect(`${col<DepartmentEntity>(departmentAlias, 'name')} as department_name`)
+          .addSelect(
+            `${col<PositionEntity>(positionAlias, 'name')} as position_name`,
+          )
+          .addSelect(
+            `${col<PositionEntity>(positionAlias, 'id')} as position_id`,
+          )
+          .addSelect(
+            `${col<DepartmentEntity>(departmentAlias, 'name')} as department_name`,
+          )
           .addSelect(`${col<StaffEntity>(staffAlias, 'id')} as staff_id`);
       } else if (!hasPositionJoin) {
         // Si hicimos join con employeeHasPositions pero no con position
@@ -903,9 +1087,15 @@ export class DashboardService {
             departmentAlias,
             `${col<DepartmentEntity>(departmentAlias, 'deleted_at')} IS NULL`,
           )
-          .addSelect(`${col<PositionEntity>(positionAlias, 'name')} as position_name`)
-          .addSelect(`${col<PositionEntity>(positionAlias, 'id')} as position_id`)
-          .addSelect(`${col<DepartmentEntity>(departmentAlias, 'name')} as department_name`);
+          .addSelect(
+            `${col<PositionEntity>(positionAlias, 'name')} as position_name`,
+          )
+          .addSelect(
+            `${col<PositionEntity>(positionAlias, 'id')} as position_id`,
+          )
+          .addSelect(
+            `${col<DepartmentEntity>(departmentAlias, 'name')} as department_name`,
+          );
       }
 
       // Filtros por fecha
@@ -940,10 +1130,16 @@ export class DashboardService {
             bondAlias,
             `${col<BondEntity>(bondAlias, 'deleted_at')} IS NULL`,
           )
-          .addSelect(`${col<BondHasEmployee>(bondHasEmployeeAlias, 'id')} as bond_assignment_id`)
+          .addSelect(
+            `${col<BondHasEmployee>(bondHasEmployeeAlias, 'id')} as bond_assignment_id`,
+          )
           .addSelect(`${col<BondEntity>(bondAlias, 'amount')} as bond_amount`)
-          .addSelect(`TO_CHAR(${col<BondHasEmployee>(bondHasEmployeeAlias, 'date_assigned')}, 'YYYY-MM-DD') as bond_date_assigned`)
-          .addSelect(`TO_CHAR(${col<BondHasEmployee>(bondHasEmployeeAlias, 'date_limit')}, 'YYYY-MM-DD') as bond_date_limit`);
+          .addSelect(
+            `TO_CHAR(${col<BondHasEmployee>(bondHasEmployeeAlias, 'date_assigned')}, 'YYYY-MM-DD') as bond_date_assigned`,
+          )
+          .addSelect(
+            `TO_CHAR(${col<BondHasEmployee>(bondHasEmployeeAlias, 'date_limit')}, 'YYYY-MM-DD') as bond_date_limit`,
+          );
 
         // Filtrar bonos activos
         if (hasActiveBonds) {
@@ -978,8 +1174,13 @@ export class DashboardService {
               bondTypeAlias,
               `${col<TypesBondEntity>(bondTypeAlias, 'deleted_at')} IS NULL`,
             )
-            .addSelect(`${col<TypesBondEntity>(bondTypeAlias, 'type')} as bond_type`)
-            .andWhere(`${col<TypesBondEntity>(bondTypeAlias, 'id')} = :bondTypeId`, { bondTypeId });
+            .addSelect(
+              `${col<TypesBondEntity>(bondTypeAlias, 'type')} as bond_type`,
+            )
+            .andWhere(
+              `${col<TypesBondEntity>(bondTypeAlias, 'id')} = :bondTypeId`,
+              { bondTypeId },
+            );
         } else {
           // Si no hay filtro por tipo, incluir el tipo en el select de todas formas
           query
@@ -988,7 +1189,9 @@ export class DashboardService {
               bondTypeAlias,
               `${col<TypesBondEntity>(bondTypeAlias, 'deleted_at')} IS NULL`,
             )
-            .addSelect(`${col<TypesBondEntity>(bondTypeAlias, 'type')} as bond_type`);
+            .addSelect(
+              `${col<TypesBondEntity>(bondTypeAlias, 'type')} as bond_type`,
+            );
         }
       } else {
         // Si no hay filtros de bonos pero queremos mostrar bonos si existen
@@ -1008,16 +1211,24 @@ export class DashboardService {
             bondTypeAlias,
             `${col<TypesBondEntity>(bondTypeAlias, 'deleted_at')} IS NULL`,
           )
-          .addSelect(`${col<BondHasEmployee>(bondHasEmployeeAlias, 'id')} as bond_assignment_id`)
+          .addSelect(
+            `${col<BondHasEmployee>(bondHasEmployeeAlias, 'id')} as bond_assignment_id`,
+          )
           .addSelect(`${col<BondEntity>(bondAlias, 'amount')} as bond_amount`)
-          .addSelect(`TO_CHAR(${col<BondHasEmployee>(bondHasEmployeeAlias, 'date_assigned')}, 'YYYY-MM-DD') as bond_date_assigned`)
-          .addSelect(`TO_CHAR(${col<BondHasEmployee>(bondHasEmployeeAlias, 'date_limit')}, 'YYYY-MM-DD') as bond_date_limit`)
-          .addSelect(`${col<TypesBondEntity>(bondTypeAlias, 'type')} as bond_type`);
+          .addSelect(
+            `TO_CHAR(${col<BondHasEmployee>(bondHasEmployeeAlias, 'date_assigned')}, 'YYYY-MM-DD') as bond_date_assigned`,
+          )
+          .addSelect(
+            `TO_CHAR(${col<BondHasEmployee>(bondHasEmployeeAlias, 'date_limit')}, 'YYYY-MM-DD') as bond_date_limit`,
+          )
+          .addSelect(
+            `${col<TypesBondEntity>(bondTypeAlias, 'type')} as bond_type`,
+          );
       }
 
       const results = await query.getRawMany();
 
-      return results.map(row => ({
+      return results.map((row) => ({
         employee_id: row.employee_id,
         staff_id: row.staff_id || null,
         full_name: row.full_name?.trim(),
@@ -1040,14 +1251,19 @@ export class DashboardService {
           id: row.project_id || null,
           name: row.project_name || null,
         },
-        bond: row.bond_assignment_id ? {
-          assignment_id: row.bond_assignment_id,
-          amount: Number(row.bond_amount),
-          type: row.bond_type || null,
-          date_assigned: row.bond_date_assigned,
-          date_limit: row.bond_date_limit,
-          is_active: row.bond_date_limit ? new Date(row.bond_date_limit).setHours(0, 0, 0, 0) >= new Date().setHours(0, 0, 0, 0) : null,
-        } : null,
+        bond: row.bond_assignment_id
+          ? {
+              assignment_id: row.bond_assignment_id,
+              amount: Number(row.bond_amount),
+              type: row.bond_type || null,
+              date_assigned: row.bond_date_assigned,
+              date_limit: row.bond_date_limit,
+              is_active: row.bond_date_limit
+                ? new Date(row.bond_date_limit).setHours(0, 0, 0, 0) >=
+                  new Date().setHours(0, 0, 0, 0)
+                : null,
+            }
+          : null,
       }));
     } catch (error) {
       throw ErrorManager.createSignatureError(error);
@@ -1066,12 +1282,15 @@ export class DashboardService {
         hasBonds,
         hasActiveBonds,
         hasExpiredBonds,
-        bondTypeId
+        bondTypeId,
       } = filters;
 
       // Auto-determinar groupBy si no se especifica, basado en el rango de fechas
       if (!groupBy && startDate && endDate) {
-        const daysDiff = Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24));
+        const daysDiff = Math.ceil(
+          (new Date(endDate).getTime() - new Date(startDate).getTime()) /
+            (1000 * 60 * 60 * 24),
+        );
         if (daysDiff <= 7) {
           groupBy = GroupByPeriod.DAY;
         } else if (daysDiff <= 60) {
@@ -1087,7 +1306,9 @@ export class DashboardService {
 
       // Validar que existan fechas para agrupar
       if (!startDate || !endDate) {
-        throw new Error('Se requieren startDate y endDate para generar datos de gráficas');
+        throw new Error(
+          'Se requieren startDate y endDate para generar datos de gráficas',
+        );
       }
 
       // Generar categorías (períodos) según el tipo de agrupación
@@ -1101,29 +1322,43 @@ export class DashboardService {
 
       // Series de status
       if (isDismissal === true) {
-        seriesToGenerate.push(this.getChartDespidos(filters, categories, groupBy));
+        seriesToGenerate.push(
+          this.getChartDespidos(filters, categories, groupBy),
+        );
       } else if (isDismissal === false) {
-        seriesToGenerate.push(this.getChartActivos(filters, categories, groupBy));
+        seriesToGenerate.push(
+          this.getChartActivos(filters, categories, groupBy),
+        );
       } else {
         // Mostrar ambos si no se especifica
-        seriesToGenerate.push(this.getChartActivos(filters, categories, groupBy));
-        seriesToGenerate.push(this.getChartDespidos(filters, categories, groupBy));
+        seriesToGenerate.push(
+          this.getChartActivos(filters, categories, groupBy),
+        );
+        seriesToGenerate.push(
+          this.getChartDespidos(filters, categories, groupBy),
+        );
       }
 
       // Serie de bonos (solo si hay filtros de bonos)
       if (hasBonds || hasActiveBonds || hasExpiredBonds || bondTypeId) {
-        seriesToGenerate.push(this.getChartConBonos(filters, categories, groupBy));
+        seriesToGenerate.push(
+          this.getChartConBonos(filters, categories, groupBy),
+        );
       }
 
       // Series de vacaciones y permisos (siempre)
-      seriesToGenerate.push(this.getChartVacaciones(filters, categories, groupBy));
-      seriesToGenerate.push(this.getChartPermisos(filters, categories, groupBy));
+      seriesToGenerate.push(
+        this.getChartVacaciones(filters, categories, groupBy),
+      );
+      seriesToGenerate.push(
+        this.getChartPermisos(filters, categories, groupBy),
+      );
 
       // Obtener todas las series en paralelo
       const series = await Promise.all(seriesToGenerate);
 
       return {
-        categories: categories.map(c => c.label),
+        categories: categories.map((c) => c.label),
         series,
       };
     } catch (error) {
@@ -1134,17 +1369,17 @@ export class DashboardService {
   private generateCategories(
     startDate: Date,
     endDate: Date,
-    groupBy: GroupByPeriod
+    groupBy: GroupByPeriod,
   ): Array<{ label: string; start: Date; end: Date }> {
     const categories: Array<{ label: string; start: Date; end: Date }> = [];
-    
+
     // Normalizar fechas al inicio/fin del día en la zona horaria local
     const start = new Date(startDate);
     start.setHours(0, 0, 0, 0);
-    
+
     const end = new Date(endDate);
     end.setHours(23, 59, 59, 999);
-    
+
     const current = new Date(start);
 
     while (current <= end) {
@@ -1181,12 +1416,20 @@ export class DashboardService {
           if (current.getTime() === start.getTime()) {
             periodStart = new Date(start);
           } else {
-            periodStart = new Date(current.getFullYear(), current.getMonth(), 1);
+            periodStart = new Date(
+              current.getFullYear(),
+              current.getMonth(),
+              1,
+            );
           }
           periodStart.setHours(0, 0, 0, 0);
 
           // Fin del mes
-          periodEnd = new Date(current.getFullYear(), current.getMonth() + 1, 0);
+          periodEnd = new Date(
+            current.getFullYear(),
+            current.getMonth() + 1,
+            0,
+          );
           periodEnd.setHours(23, 59, 59, 999);
 
           // Ajustar si excede el rango solicitado
@@ -1244,17 +1487,19 @@ export class DashboardService {
   }
 
   private getWeekNumber(date: Date): number {
-    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const d = new Date(
+      Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()),
+    );
     const dayNum = d.getUTCDay() || 7;
     d.setUTCDate(d.getUTCDate() + 4 - dayNum);
     const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-    return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+    return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
   }
 
   private async getChartTotal(
     filters: FilterDashboardDto,
     categories: Array<{ label: string; start: Date; end: Date }>,
-    groupBy: GroupByPeriod
+    groupBy: GroupByPeriod,
   ): Promise<{ name: string; data: number[] }> {
     try {
       const data: number[] = [];
@@ -1278,7 +1523,7 @@ export class DashboardService {
   private async getChartActivos(
     filters: FilterDashboardDto,
     categories: Array<{ label: string; start: Date; end: Date }>,
-    groupBy: GroupByPeriod
+    groupBy: GroupByPeriod,
   ): Promise<{ name: string; data: number[] }> {
     try {
       const data: number[] = [];
@@ -1303,7 +1548,7 @@ export class DashboardService {
   private async getChartDespidos(
     filters: FilterDashboardDto,
     categories: Array<{ label: string; start: Date; end: Date }>,
-    groupBy: GroupByPeriod
+    groupBy: GroupByPeriod,
   ): Promise<{ name: string; data: number[] }> {
     try {
       const data: number[] = [];
@@ -1328,7 +1573,7 @@ export class DashboardService {
   private async getChartConBonos(
     filters: FilterDashboardDto,
     categories: Array<{ label: string; start: Date; end: Date }>,
-    groupBy: GroupByPeriod
+    groupBy: GroupByPeriod,
   ): Promise<{ name: string; data: number[] }> {
     try {
       const data: number[] = [];
@@ -1350,11 +1595,10 @@ export class DashboardService {
     }
   }
 
-
   private async getChartVacaciones(
     filters: FilterDashboardDto,
     categories: Array<{ label: string; start: Date; end: Date }>,
-    groupBy: GroupByPeriod
+    groupBy: GroupByPeriod,
   ): Promise<{ name: string; data: number[] }> {
     try {
       const data: number[] = [];
@@ -1378,7 +1622,7 @@ export class DashboardService {
   private async getChartPermisos(
     filters: FilterDashboardDto,
     categories: Array<{ label: string; start: Date; end: Date }>,
-    groupBy: GroupByPeriod
+    groupBy: GroupByPeriod,
   ): Promise<{ name: string; data: number[] }> {
     try {
       const data: number[] = [];
@@ -1398,5 +1642,4 @@ export class DashboardService {
       throw ErrorManager.createSignatureError(error);
     }
   }
-
 }
