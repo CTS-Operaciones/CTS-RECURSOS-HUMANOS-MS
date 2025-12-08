@@ -77,6 +77,11 @@ export class EmployeeController {
   restoreItem(@Payload() { id }: { id: number }) {
     return this.employeeService.restoreItem(id);
   }
+
+  @MessagePattern('updateVacationDays-employee')
+  updateVacationDays() {
+    return this.employeeService.updateVacationDays();
+  }
 }
 
 @Controller({ path: 'asignedPositions', version: '1' })
@@ -103,7 +108,9 @@ export class AsignedPositionsController {
     @Payload()
     payload: BulkUpdateEmployeeHasPositionsDto,
   ) {
-    return this.employeeHasPostionService.bulkUpdateEmployeeHasPositions(payload);
+    return this.employeeHasPostionService.bulkUpdateEmployeeHasPositions(
+      payload,
+    );
   }
 
   @MessagePattern('findByEmployeeId-asignedPositions')

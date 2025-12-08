@@ -939,7 +939,7 @@ export class EmployeeService {
   }
 
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
-  async updateVacationDays() {
+  public async updateVacationDays() {
     // Obtener todos los contratos activos
     const { data: activeContracts } = await paginationResult(
       this.employmentRecordRepository,
